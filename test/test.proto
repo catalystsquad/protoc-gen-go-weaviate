@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package test;
+
+message Thing {
+  string name = 1;
+  repeated string tags = 2;
+  Thing2 associated_thing = 3;
+  repeated Thing2 associated_things = 4;
+}
+
+message Thing2 {
+  string id = 1;
+}
