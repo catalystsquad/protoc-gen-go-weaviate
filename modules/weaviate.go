@@ -22,15 +22,20 @@ func (p *WeaviateModule) InitContext(c pgs.BuildContext) {
 	p.ctx = pgsgo.InitContext(c.Parameters())
 
 	tpl := template.New("weaviate").Funcs(map[string]interface{}{
-		"structName":       p.getStructName,
-		"structFieldName":  p.getStructFieldName,
-		"structFieldType":  p.getStructFieldType,
-		"className":        p.getClassName,
-		"propertyName":     p.getPropertyName,
-		"propertyDataType": p.getPropertyDataType,
+		"package":               p.ctx.PackageName,
+		"structName":            p.getStructName,
+		"structField":           p.getStructField,
+		"structFieldName":       p.getStructFieldName,
+		"structFieldType":       p.getStructFieldType,
+		"className":             p.getClassName,
+		"propertyName":          p.getPropertyName,
+		"propertyDataType":      p.getPropertyDataType,
+		"dataField":             p.getDataField,
+		"fieldIsCrossReference": p.fieldIsCrossReference,
+		"fieldIsRepeated":       p.fieldIsRepeated,
 	})
 
-	p.tpl = template.Must(tpl.Parse(WeaviateTemplate))
+	p.tpl = template.Must(tpl.Parse(WeaviateTemplate2))
 }
 
 func (p *WeaviateModule) getClassName(m pgs.Message) string {
@@ -39,6 +44,10 @@ func (p *WeaviateModule) getClassName(m pgs.Message) string {
 
 func (p *WeaviateModule) getStructName(m pgs.Message) string {
 	return p.getClassName(m)
+}
+
+func (p *WeaviateModule) getStructField(field pgs.Field) string {
+	return fmt.Sprintf("%s %s", p.getStructFieldName(field), p.getStructFieldType(field))
 }
 
 func (p *WeaviateModule) getCrossReferenceType(field pgs.Field) string {
@@ -71,7 +80,7 @@ func (p *WeaviateModule) getStructFieldType(field pgs.Field) (datatype string) {
 	} else {
 		datatype = p.getNonStructFieldType(field)
 	}
-	if isList(field) {
+	if p.fieldIsRepeated(field) {
 		datatype = fmt.Sprintf("[]%s", datatype)
 	}
 	if isPointer(field) {
@@ -81,19 +90,33 @@ func (p *WeaviateModule) getStructFieldType(field pgs.Field) (datatype string) {
 }
 
 func (p *WeaviateModule) getPropertyDataType(field pgs.Field) (dataType string) {
-	if isCrossReference(field) {
+	if p.fieldIsCrossReference(field) {
 		dataType = p.getCrossReferenceType(field)
 		return
 	}
 	dataType = p.getNonCrossReferenceType(field)
-	if isList(field) {
+	if p.fieldIsRepeated(field) {
 		dataType = fmt.Sprintf("%s[]", dataType)
 	}
 	return
 }
 
-func isCrossReference(field pgs.Field) bool {
+func (p *WeaviateModule) getDataField(field pgs.Field) (dataField string) {
+	dataField = fmt.Sprintf(`"%s":`, p.getPropertyName(field))
+	if p.fieldIsCrossReference(field) {
+		dataField = fmt.Sprintf("%s []map[string]string{}", dataField)
+	} else {
+		dataField = fmt.Sprintf("%s s.%s", dataField, p.getStructFieldName(field))
+	}
+	return
+}
+
+func (p *WeaviateModule) fieldIsCrossReference(field pgs.Field) bool {
 	return field.Type().ProtoType() == pgs.MessageT
+}
+
+func (p *WeaviateModule) fieldIsRepeated(field pgs.Field) bool {
+	return field.Type().IsRepeated()
 }
 
 func isStructType(field pgs.Field) bool {
@@ -103,10 +126,6 @@ func isStructType(field pgs.Field) bool {
 func isPointer(field pgs.Field) bool {
 	label := field.Descriptor().Proto3Optional
 	return label != nil && *label
-}
-
-func isList(field pgs.Field) bool {
-	return field.Type().IsRepeated()
 }
 
 func (p *WeaviateModule) getPropertyName(field pgs.Field) string {
@@ -143,36 +162,6 @@ func (p *WeaviateModule) marshaler(m pgs.Message) pgs.Name {
 func (p *WeaviateModule) unmarshaler(m pgs.Message) pgs.Name {
 	return p.ctx.Name(m) + "JSONUnmarshaler"
 }
-
-const WeaviateTemplate = `
-import (
-  "github.com/weaviate/weaviate/entities/models"
-)
-{{ range .AllMessages }}
-type {{ structName . }} struct {
-	{{ range .Fields }}
-	{{- structFieldName . }} {{ structFieldType . }}
-	{{ end -}}
-}
-
-func ({{ structName . }}) WeaviateClassName() string {
-	return "{{ className . }}"
-}
-
-func ({{ structName . }}) WeaviateModelDefinition() models.Model {
-	return models.Class{
-  		Class:       "{{ className . }}",
-  		Properties: []*models.Property{
-  		{{- range .Fields }}
-			{
-			  Name:        "{{ propertyName . }}",
-			  DataType:    []string{"{{ propertyDataType . }}"},
-			},
-    	{{- end }}
-  	}
-} 
-{{ end }}
-`
 
 var weaviateTypeMap = map[pgs.ProtoType]string{
 	pgs.StringT:  "text",

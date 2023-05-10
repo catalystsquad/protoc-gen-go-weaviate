@@ -3,11 +3,12 @@ syntax = "proto3";
 package test;
 
 message Thing {
-  string name = 1;
-  repeated string tags = 2;
-  Thing2 associated_thing = 3;
-  repeated Thing2 associated_things = 4;
-  optional string an_optional_field = 5;
+  string id = 1;
+  string name = 2;
+  repeated string tags = 3;
+  Thing2 associated_thing = 4;
+  repeated Thing2 associated_things = 5;
+  optional string an_optional_field = 6;
 }
 
 message Thing2 {

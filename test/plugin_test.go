@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	"os"
+	"strings"
 	"testing"
 	"text/template"
 )
@@ -25,7 +26,9 @@ func TestModule(t *testing.T) {
 		pgs.ProtocOutput(res), // capture CodeGeneratorResponse
 		pgs.FileSystem(fs),    // capture any custom files written directly to disk
 	).RegisterModule(modules.NewWeaviateModule()).RegisterPostProcessor().Render()
-	err = os.WriteFile("test.weaviate.go", res.Bytes(), 0644)
+	fileString := string(res.Bytes())
+	fileString = fileString[strings.Index(string(res.Bytes()), "package"):]
+	err = os.WriteFile("test.weaviate.go", []byte(fileString), 0644)
 	require.NoError(t, err)
 }
 
