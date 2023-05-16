@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package weaviate;
+
+option go_package = "github.com/catalystsquad/protoc-gen-go-weaviate/options;weaviate";
+
+import "google/protobuf/descriptor.proto";
+
+// Currently no file options
+extend google.protobuf.FileOptions {
+  WeaviateFileOptions file_opts = 52119;
+}
+
+message WeaviateFileOptions {
+}
+
+extend google.protobuf.MessageOptions {
+    WeaviateMessageOptions opts = 52119;
+}
+
+message WeaviateMessageOptions {
+  bool ignore = 1;
+}
+
+// Field level specifications
+extend google.protobuf.FieldOptions {
+    WeaviateFieldOptions field = 52119;
+}
+
+message WeaviateFieldOptions {
+  bool ignore = 1;
+}
