@@ -23,6 +23,54 @@ type {{ structName . }} struct {
 	{{ end }}
 }
 
+func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
+    theProto := &{{ protoStructName . }}{}
+	{{- range .Fields }}
+	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
+    for _, protoField := range s.{{ structFieldName . }} {
+		msg := protoField.ToProto()
+		if theProto.{{ structFieldName . }} == nil {
+			theProto.{{ structFieldName . }} = []*{{ protoStructTypeFromField . }}{msg}
+		} else {
+			theProto.{{ structFieldName . }} = append(theProto.{{ structFieldName . }}, msg)
+		}
+	}
+    {{- else if fieldIsMessage . }}
+	theProto.{{ structFieldName . }} = s.{{ structFieldName . }}.ToProto()
+    {{- else }}
+    theProto.{{ structFieldName . }} = s.{{ structFieldName . }}
+    {{ end }}
+	{{ end }}
+    return theProto
+}
+
+func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
+    model := {{ structName . }}{}
+	{{- range .Fields }}
+	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
+    for _, protoField := range s.{{ structFieldName . }} {
+		msg := protoField.ToWeaviateModel()
+		if model.{{ structFieldName . }} == nil {
+			model.{{ structFieldName . }} = {{ structFieldType . }}{msg}
+		} else {
+			model.{{ structFieldName . }} = append(model.{{ structFieldName . }}, msg)
+		}
+	}
+    {{- else if and (fieldIsMessage .) (not (fieldIsOptional .)) }}
+	if s.{{ structFieldName . }} != nil {
+	model.{{ structFieldName . }} = s.{{ structFieldName . }}.ToWeaviateModel()
+	}
+	{{- else if and (fieldIsMessage .) (fieldIsOptional .) }}
+	if s.{{ structFieldName . }} != nil {
+		model.{{ structFieldName . }} = lo.ToPtr(s.{{ structFieldName . }}.ToWeaviateModel())
+	}
+    {{- else }}
+    model.{{ structFieldName . }} = s.{{ structFieldName . }}
+    {{ end }}
+	{{ end }}
+    return model
+}
+
 func (s {{ structName . }}) WeaviateClassName() string {
 	return "{{ className . }}"
 }

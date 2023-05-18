@@ -23,9 +23,9 @@ message Thing {
   sint32 an_sint32 = 8;
   // @gotags: fake:"{int64}"
   sint64 an_sint64 = 9;
-  // @gotags: fake:"{int32}"
+  // @gotags: fake:"{uint32}"
   fixed32 a_fixed32 = 10;
-  // @gotags: fake:"{int64}"
+  // @gotags: fake:"{uint64}"
   fixed64 a_fixed64 = 11;
   // @gotags: fake:"{int32}"
   sfixed32 an_sfixed32 = 12;

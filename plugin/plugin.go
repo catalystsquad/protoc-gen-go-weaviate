@@ -25,18 +25,25 @@ type Builder struct {
 const SUPPORTS_OPTIONAL_FIELDS = 1
 
 var templateFuncs = map[string]any{
-	"structName":            getStructName,
-	"structField":           getStructField,
-	"structFieldName":       getStructFieldName,
-	"className":             getClassName,
-	"propertyName":          getPropertyName,
-	"propertyDataType":      getPropertyDataType,
-	"dataField":             getDataField,
-	"fieldIsCrossReference": isStructType,
-	"fieldIsRepeated":       fieldIsRepeated,
-	"fieldComments":         getFieldComments,
-	"jsonTag":               getJsonTag,
-	"fieldIsOptional":       fieldIsOptional,
+	"protoStructName":          getProtoStructName,
+	"protoStructTypeFromField": getProtoStructTypeFromField,
+	"protoStructType":          getProtoStructType,
+	"structName":               getStructName,
+	"structField":              getStructField,
+	"structFieldName":          getStructFieldName,
+	"structFieldType":          getStructFieldType,
+	"className":                getClassName,
+	"fieldClassName":           getFieldClassName,
+	"propertyName":             getPropertyName,
+	"propertyDataType":         getPropertyDataType,
+	"dataField":                getDataField,
+	"fieldIsCrossReference":    isStructType,
+	"fieldIsMessage":           isStructType,
+	"fieldIsRepeated":          fieldIsRepeated,
+	"fieldComments":            getFieldComments,
+	"jsonTag":                  getJsonTag,
+	"fieldIsOptional":          fieldIsOptional,
+	"weaviateModelReturnType":  getWeaviateModelReturnType,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -103,8 +110,20 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 	return
 }
 
-func getStructName(m *protogen.Message) protoreflect.Name {
+func getStructName(m *protogen.Message) string {
+	return fmt.Sprintf("%sWeaviateModel", m.Desc.Name())
+}
+
+func getProtoStructName(m *protogen.Message) protoreflect.Name {
 	return m.Desc.Name()
+}
+
+func getProtoStructType(m *protogen.Message) protoreflect.Name {
+	return m.Desc.Name()
+}
+
+func getProtoStructTypeFromField(field *protogen.Field) protoreflect.Name {
+	return getProtoStructType(field.Message)
 }
 
 func getStructField(field *protogen.Field) string {
@@ -135,7 +154,7 @@ func isStructType(field *protogen.Field) bool {
 }
 
 func getStructFieldStructType(field *protogen.Field) string {
-	return field.Message.GoIdent.GoName
+	return getStructName(field.Message)
 }
 
 func getStructFieldNonStructType(field *protogen.Field) string {
@@ -152,6 +171,10 @@ func isPointer(field *protogen.Field) bool {
 
 func getClassName(message *protogen.Message) string {
 	return message.GoIdent.GoName
+}
+
+func getFieldClassName(field *protogen.Field) string {
+	return getClassName(field.Message)
 }
 
 func getFieldComments(field *protogen.Field) string {
@@ -174,13 +197,17 @@ func fieldIsOptional(field *protogen.Field) bool {
 	return field.Desc.HasOptionalKeyword()
 }
 
+func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {
+	return m.Desc.Name()
+}
+
 func getPropertyName(field *protogen.Field) string {
 	return field.Desc.TextName()
 }
 
 func getPropertyDataType(field *protogen.Field) (datatype string) {
 	if isStructType(field) {
-		datatype = getStructFieldStructType(field)
+		datatype = getFieldClassName(field)
 		return
 	}
 	datatype = getNonCrossReferenceType(field)
@@ -210,14 +237,13 @@ func getDataField(field *protogen.Field) (dataField string) {
 
 func isInt64(field *protogen.Field) bool {
 	kind := field.Desc.Kind()
-	return kind == protoreflect.Fixed64Kind ||
-		kind == protoreflect.Int64Kind ||
+	return kind == protoreflect.Int64Kind ||
 		kind == protoreflect.Sfixed64Kind ||
 		kind == protoreflect.Sint64Kind
 }
 
 func isUint64(field *protogen.Field) bool {
-	return field.Desc.Kind() == protoreflect.Uint64Kind
+	return field.Desc.Kind() == protoreflect.Uint64Kind || field.Desc.Kind() == protoreflect.Fixed64Kind
 }
 
 var weaviateTypeMap = map[protoreflect.Kind]string{
@@ -249,10 +275,10 @@ var goTypeMap = map[protoreflect.Kind]string{
 	protoreflect.Sint64Kind:   "int64",
 	protoreflect.Uint64Kind:   "uint64",
 	protoreflect.Sfixed32Kind: "int32",
-	protoreflect.Fixed32Kind:  "int32",
-	protoreflect.FloatKind:    "float64",
+	protoreflect.Fixed32Kind:  "uint32",
+	protoreflect.FloatKind:    "float32",
 	protoreflect.Sfixed64Kind: "int64",
-	protoreflect.Fixed64Kind:  "int64",
+	protoreflect.Fixed64Kind:  "uint64",
 	protoreflect.DoubleKind:   "float64",
 	protoreflect.StringKind:   "string",
 	protoreflect.BytesKind:    "[]byte",
