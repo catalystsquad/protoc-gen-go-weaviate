@@ -87,7 +87,7 @@ func (s {{ structName . }}) WeaviateClassSchemaProperties() []*models.Property {
   		{{- range .Fields -}}
 		    {{ if ne (propertyName .) "id" -}}
 			{
-			  Name:        "{{ propertyName . }}",
+			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
 			},
             {{- end -}}
@@ -99,7 +99,7 @@ func (s {{ structName . }}) Data() map[string]interface{} {
 	data := map[string]interface{}{
 		{{- range .Fields }}
         {{- if ne (propertyName .) "id" }}
-        "{{ propertyName . }}": {{ dataField . }},
+        "{{ jsonFieldName . }}": {{ dataField . }},
 		{{- end }}
 		{{- end }}
 	}
@@ -115,7 +115,7 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
     {{- if fieldIsRepeated . }}
 	for _, crossReference := range s.{{ structFieldName . }} {
       {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", crossReference.Id)}
-	  data["{{ propertyName . }}"] = append(data["{{ propertyName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+	  data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
 	}
     {{- else }}
 	{{ if fieldIsOptional . -}}
@@ -123,7 +123,7 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
     {{- end -}}
     if s.{{ structFieldName . }}.Id != "" {
 	{{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", s.{{ structFieldName . }}.Id)}
-    data["{{ propertyName . }}"] = append(data["{{ propertyName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+    data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
     }
 	{{ if fieldIsOptional . -}}
 	}

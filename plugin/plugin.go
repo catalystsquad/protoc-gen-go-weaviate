@@ -42,6 +42,7 @@ var templateFuncs = map[string]any{
 	"fieldIsRepeated":          fieldIsRepeated,
 	"fieldComments":            getFieldComments,
 	"jsonTag":                  getJsonTag,
+	"jsonFieldName":            jsonFieldName,
 	"fieldIsOptional":          fieldIsOptional,
 	"weaviateModelReturnType":  getWeaviateModelReturnType,
 }
@@ -187,6 +188,10 @@ func getJsonTag(field *protogen.Field) string {
 		asString = ",string"
 	}
 	return fmt.Sprintf("`json:\"%s%s\"`", field.Desc.JSONName(), asString)
+}
+
+func jsonFieldName(field *protogen.Field) string {
+	return field.Desc.JSONName()
 }
 
 func marshallJsonAsString(field *protogen.Field) bool {
