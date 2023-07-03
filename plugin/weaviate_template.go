@@ -14,6 +14,7 @@ import (
 )
 
 {{ range .messages }}
+{{ if shouldGenerate . }}
 type {{ structName . }} struct {
 	{{- range .Fields }}
 	{{ if includeField . }}
@@ -177,6 +178,7 @@ func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client,
 func (s {{ structName . }}) EnsureClass(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.WeaviateClassSchema(), continueOnError)
 }
+{{ end }}
 {{ end }}
 
 func ensureClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
