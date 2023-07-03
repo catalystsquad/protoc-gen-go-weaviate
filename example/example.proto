@@ -8,6 +8,7 @@ import "options/weaviate.proto";
 import "google/protobuf/timestamp.proto";
 
 message Thing {
+  option (weaviate.opts) = {generate: true};
   // @gotags: fake:"{uuid}"
   string id = 1;
   // @gotags: fake:"{price:0.00,1000.00}"
@@ -41,6 +42,7 @@ message Thing {
 }
 
 message Thing2 {
+  option (weaviate.opts) = {generate: true};
   // @gotags: fake:"{uuid}"
   string id = 1;
   // @gotags: fake:"{name}"

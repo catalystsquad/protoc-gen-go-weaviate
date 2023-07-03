@@ -52,6 +52,7 @@ var templateFuncs = map[string]any{
 	"weaviateModelReturnType":  getWeaviateModelReturnType,
 	"includeField":             includeField,
 	"isTimestamp":              isTimestamp,
+	"shouldGenerate":           shouldGenerate,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -331,4 +332,27 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 
 func isTimestamp(field *protogen.Field) bool {
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
+}
+
+func shouldGenerate(message *protogen.Message) bool {
+	options := getMessageOptions(message)
+	return options.Generate
+}
+
+func getMessageOptions(message *protogen.Message) *weaviate.WeaviateMessageOptions {
+	options := message.Desc.Options().(*descriptorpb.MessageOptions)
+	if options == nil {
+		return &weaviate.WeaviateMessageOptions{}
+	}
+
+	v := proto.GetExtension(options, weaviate.E_Opts)
+	if v == nil {
+		return nil
+	}
+
+	opts, ok := v.(*weaviate.WeaviateMessageOptions)
+	if !ok {
+		return nil
+	}
+	return opts
 }

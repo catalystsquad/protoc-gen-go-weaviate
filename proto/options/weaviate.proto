@@ -21,6 +21,7 @@ extend google.protobuf.MessageOptions {
 }
 
 message WeaviateMessageOptions {
+  bool generate = 1;
 }
 
 // Field level specifications
