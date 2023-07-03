@@ -4,15 +4,15 @@ set -e
 
 RELEASE_NAME="${RELEASE_NAME:-$1}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-notarealtoken}"
-GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-catalystsquad/protoc-gen-go-gorm}"
+GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-catalystsquad/protoc-gen-go-weaviate}"
 DEFAULT_GITHUB_API_URL="https://api.github.com"
 GITHUB_API_URL="${GITHUB_API_URL:-${DEFAULT_GITHUB_API_URL}}"
 
-TARFILE_NAME="protoc-gen-go-gorm.tar.gz"
+TARFILE_NAME="protoc-gen-go-weaviate.tar.gz"
 
 echo ${RELEASE_NAME}
 
-tar -cvzf "${TARFILE_NAME}" ./protoc-gen-go-gorm
+tar -cvzf "${TARFILE_NAME}" ./protoc-gen-go-weaviate
 
 curl -L \
   -X POST \
