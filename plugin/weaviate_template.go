@@ -27,7 +27,11 @@ func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
     theProto := &{{ protoStructName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
-	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
+	{{- if isTimestamp . }}
+	if s.{{ .GoName }} != nil {
+		theProto.{{ .GoName }} = timestamppb.New(*s.{{ .GoName }})
+	}
+	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToProto()
 		if theProto.{{ structFieldName . }} == nil {
@@ -50,7 +54,11 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
     model := {{ structName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
-	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
+	{{- if isTimestamp . }}
+	if s.{{ .GoName }} != nil {
+		model.{{ .GoName }} = lo.ToPtr(s.{{ .GoName }}.AsTime())
+	}
+	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToWeaviateModel()
 		if model.{{ structFieldName . }} == nil {

@@ -5,6 +5,7 @@ package test;
 option go_package = "example.example";
 
 import "options/weaviate.proto";
+import "google/protobuf/timestamp.proto";
 
 message Thing {
   // @gotags: fake:"{uuid}"
@@ -34,7 +35,9 @@ message Thing {
   // @gotags: fake:"skip"
   repeated Thing2 repeated_messages = 21;
   // @gotags: fake:"skip"
-  string an_ignored_field = 22 [(weaviate.field).ignore = true];
+  google.protobuf.Timestamp a_timestamp = 22;
+  // @gotags: fake:"skip"
+  string an_ignored_field = 23 [(weaviate.field).ignore = true];
 }
 
 message Thing2 {

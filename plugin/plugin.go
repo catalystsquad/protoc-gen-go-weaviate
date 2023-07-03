@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	weaviate "github.com/catalystsquad/protoc-gen-go-weaviate/options"
-	"github.com/golang/glog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -24,6 +23,8 @@ type Builder struct {
 	stringEnums    bool
 	suppressWarn   bool
 }
+
+var g *protogen.GeneratedFile
 
 // I can't find where the constant is for this in protogen, so I'm putting it here
 const SUPPORTS_OPTIONAL_FIELDS = 1
@@ -50,6 +51,7 @@ var templateFuncs = map[string]any{
 	"fieldIsOptional":          fieldIsOptional,
 	"weaviateModelReturnType":  getWeaviateModelReturnType,
 	"includeField":             includeField,
+	"isTimestamp":              isTimestamp,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -100,7 +102,7 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			return
 		}
 		fileName := protoFile.GeneratedFilenamePrefix + ".pb.weaviate.go"
-		g := b.plugin.NewGeneratedFile(fileName, ".")
+		g = b.plugin.NewGeneratedFile(fileName, ".")
 		var data bytes.Buffer
 		templateMap := map[string]any{
 			"messages": protoFile.Messages,
@@ -141,7 +143,11 @@ func getStructFieldName(field *protogen.Field) string {
 }
 
 func getStructFieldType(field *protogen.Field) (datatype string) {
-	if isStructType(field) {
+	if isTimestamp(field) {
+		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "time"})
+		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
+		datatype = "*time.Time"
+	} else if isStructType(field) {
 		datatype = getStructFieldStructType(field)
 	} else {
 		datatype = getStructFieldNonStructType(field)
@@ -156,7 +162,7 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 }
 
 func isStructType(field *protogen.Field) bool {
-	return field.Message != nil
+	return !isTimestamp(field) && field.Message != nil
 }
 
 func getStructFieldStructType(field *protogen.Field) string {
@@ -214,10 +220,8 @@ func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {
 func includeField(f *protogen.Field) bool {
 	options := getFieldOptions(f)
 	if options != nil {
-		glog.Errorf("options: %#v", options)
 		return !options.Ignore
 	}
-	glog.Error("options is nil")
 	return true // default to include
 }
 
@@ -238,6 +242,9 @@ func getPropertyDataType(field *protogen.Field) (datatype string) {
 }
 
 func getNonCrossReferenceType(field *protogen.Field) string {
+	if isTimestamp(field) {
+		return "date"
+	}
 	return weaviateTypeMap[field.Desc.Kind()]
 }
 
@@ -320,4 +327,8 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 		return nil
 	}
 	return opts
+}
+
+func isTimestamp(field *protogen.Field) bool {
+	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
 }
