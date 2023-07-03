@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package weaviate;
+
+option go_package = "github.com/catalystsquad/protoc-gen-go-weaviate/options;weaviate";
+
+import "google/protobuf/descriptor.proto";
+
+// Currently no file options
+extend google.protobuf.FileOptions {
+  WeaviateFileOptions file_opts = 52119;
+}
+
+message WeaviateFileOptions {
+}
+
+// Validation rules applied at the message level
+extend google.protobuf.MessageOptions {
+  // ormable will cause orm code to be generated for this message/object
+  WeaviateMessageOptions opts = 52119;
+}
+
+message WeaviateMessageOptions {
+}
+
+// Field level specifications
+extend google.protobuf.FieldOptions {
+  WeaviateFieldOptions field = 52119;
+}
+
+message WeaviateFieldOptions {
+  bool ignore = 7;
+}

@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package test;
+
+option go_package = "example.example";
+
+import "options/weaviate.proto";
+import "google/protobuf/timestamp.proto";
+
+message Thing {
+  // @gotags: fake:"{uuid}"
+  string id = 1;
+  // @gotags: fake:"{price:0.00,1000.00}"
+  double a_double = 2;
+  // @gotags: fake:"{price:0.00,1000.00}"
+  float a_float = 3;
+  // @gotags: fake:"{int32}"
+  int32 an_int32 = 4;
+  // @gotags: fake:"{int64}"
+  int64 an_int64 = 5;
+  // @gotags: fake:"{bool}"
+  bool a_bool = 14;
+  // @gotags: fake:"{hackerphrase}"
+  string a_string = 15;
+  // @gotags: fake:"skip"
+  bytes a_bytes = 16;
+  // @gotags: fake:"{hackerphrase}"
+  repeated string repeated_scalar_field = 17;
+  // @gotags: fake:"skip"
+  optional string optional_scalar_field = 18;
+  // @gotags: fake:"skip"
+  Thing2 associated_thing = 19;
+  // @gotags: fake:"skip"
+  optional Thing2 optional_associated_thing = 20;
+  // @gotags: fake:"skip"
+  repeated Thing2 repeated_messages = 21;
+  // @gotags: fake:"skip"
+  google.protobuf.Timestamp a_timestamp = 22;
+  // @gotags: fake:"skip"
+  string an_ignored_field = 23 [(weaviate.field).ignore = true];
+}
+
+message Thing2 {
+  // @gotags: fake:"{uuid}"
+  string id = 1;
+  // @gotags: fake:"{name}"
+  string name = 2;
+}
