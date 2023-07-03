@@ -3,7 +3,11 @@ package plugin
 import (
 	"bytes"
 	"fmt"
+	weaviate "github.com/catalystsquad/protoc-gen-go-weaviate/options"
+	"github.com/golang/glog"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 	"text/template"
 
@@ -45,6 +49,7 @@ var templateFuncs = map[string]any{
 	"jsonFieldName":            jsonFieldName,
 	"fieldIsOptional":          fieldIsOptional,
 	"weaviateModelReturnType":  getWeaviateModelReturnType,
+	"includeField":             includeField,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -206,6 +211,16 @@ func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {
 	return m.Desc.Name()
 }
 
+func includeField(f *protogen.Field) bool {
+	options := getFieldOptions(f)
+	if options != nil {
+		glog.Errorf("options: %#v", options)
+		return !options.Ignore
+	}
+	glog.Error("options is nil")
+	return true // default to include
+}
+
 func getPropertyName(field *protogen.Field) string {
 	return field.Desc.TextName()
 }
@@ -287,4 +302,22 @@ var goTypeMap = map[protoreflect.Kind]string{
 	protoreflect.DoubleKind:   "float64",
 	protoreflect.StringKind:   "string",
 	protoreflect.BytesKind:    "[]byte",
+}
+
+func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
+	options := field.Desc.Options().(*descriptorpb.FieldOptions)
+	if options == nil {
+		return &weaviate.WeaviateFieldOptions{}
+	}
+
+	v := proto.GetExtension(options, weaviate.E_Field)
+	if v == nil {
+		return nil
+	}
+
+	opts, ok := v.(*weaviate.WeaviateFieldOptions)
+	if !ok {
+		return nil
+	}
+	return opts
 }

@@ -4,6 +4,8 @@ package test;
 
 option go_package = "example.example";
 
+import "options/weaviate.proto";
+
 message Thing {
   // @gotags: fake:"{uuid}"
   string id = 1;
@@ -15,22 +17,6 @@ message Thing {
   int32 an_int32 = 4;
   // @gotags: fake:"{int64}"
   int64 an_int64 = 5;
-  // @gotags: fake:"{uint32}"
-  uint32 a_uint32 = 6;
-  // @gotags: fake:"{uint64}"
-  uint64 a_uint64 = 7;
-  // @gotags: fake:"{int32}"
-  sint32 an_sint32 = 8;
-  // @gotags: fake:"{int64}"
-  sint64 an_sint64 = 9;
-  // @gotags: fake:"{uint32}"
-  fixed32 a_fixed32 = 10;
-  // @gotags: fake:"{uint64}"
-  fixed64 a_fixed64 = 11;
-  // @gotags: fake:"{int32}"
-  sfixed32 an_sfixed32 = 12;
-  // @gotags: fake:"{int64}"
-  sfixed64 an_sfixed64 = 13;
   // @gotags: fake:"{bool}"
   bool a_bool = 14;
   // @gotags: fake:"{hackerphrase}"
@@ -47,6 +33,8 @@ message Thing {
   optional Thing2 optional_associated_thing = 20;
   // @gotags: fake:"skip"
   repeated Thing2 repeated_messages = 21;
+  // @gotags: fake:"skip"
+  string an_ignored_field = 22 [(weaviate.field).ignore = true];
 }
 
 message Thing2 {

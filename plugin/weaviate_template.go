@@ -6,9 +6,7 @@ package {{ package }}
 import (
 	"context"
 	"fmt"
-	"github.com/catalystsquad/app-utils-go/errorutils"
 	"github.com/samber/lo"
-	"github.com/sirupsen/logrus"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/data"
 	"github.com/weaviate/weaviate/entities/models"
@@ -18,14 +16,17 @@ import (
 {{ range .messages }}
 type {{ structName . }} struct {
 	{{- range .Fields }}
+	{{ if includeField . }}
 	{{ fieldComments . -}}
     {{ structField . }} {{ jsonTag . -}}
+	{{ end }}
 	{{ end }}
 }
 
 func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
     theProto := &{{ protoStructName . }}{}
 	{{- range .Fields }}
+	{{ if includeField . }}
 	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToProto()
@@ -41,12 +42,14 @@ func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
     theProto.{{ structFieldName . }} = s.{{ structFieldName . }}
     {{ end }}
 	{{ end }}
+	{{ end }}
     return theProto
 }
 
 func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
     model := {{ structName . }}{}
 	{{- range .Fields }}
+	{{ if includeField . }}
 	{{- if and (fieldIsMessage .) (fieldIsRepeated .) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToWeaviateModel()
@@ -67,6 +70,7 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
     {{- else }}
     model.{{ structFieldName . }} = s.{{ structFieldName . }}
     {{ end }}
+	{{ end }}
 	{{ end }}
     return model
 }
@@ -98,8 +102,10 @@ func (s {{ structName . }}) WeaviateClassSchemaProperties() []*models.Property {
 func (s {{ structName . }}) Data() map[string]interface{} {
 	data := map[string]interface{}{
 		{{- range .Fields }}
+		{{ if includeField . }}
         {{- if ne (propertyName .) "id" }}
         "{{ jsonFieldName . }}": {{ dataField . }},
+		{{- end }}
 		{{- end }}
 		{{- end }}
 	}
@@ -160,23 +166,28 @@ func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) EnsureClass(client *weaviate.Client) {
-	ensureClass(client, s.WeaviateClassSchema())
+func (s {{ structName . }}) EnsureClass(client *weaviate.Client, continueOnError bool) error {
+	return ensureClass(client, s.WeaviateClassSchema(), continueOnError)
 }
 {{ end }}
 
-func ensureClass(client *weaviate.Client, class models.Class) {
+func ensureClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var exists bool
-	if exists = classExists(client, class.Class); exists {
-		updateClass(client, class)
+	exists, err = classExists(client, class.Class)
+	if err != nil {
+		return
+	}
+	if exists {
+		return updateClass(client, class, continueOnError)
 	} else {
-		createClass(client, class)
+		return createClass(client, class)
 	}
 }
 
-func updateClass(client *weaviate.Client, class models.Class) {
+func updateClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var fetchedClass *models.Class
-	if fetchedClass = getClass(client, class.Class); fetchedClass == nil {
+	fetchedClass, err = getClass(client, class.Class)
+	if err != nil || fetchedClass == nil {
 		return
 	}
 	for _, property := range class.Properties {
@@ -185,35 +196,30 @@ func updateClass(client *weaviate.Client, class models.Class) {
 		if containsProperty(fetchedClass.Properties, property) {
 			continue
 		}
-		createProperty(client, class.Class, property)
+		err = createProperty(client, class.Class, property)
+		if err != nil {
+			if !continueOnError {
+				return
+			}
+		}
 	}
-}
-
-func createProperty(client *weaviate.Client, className string, property *models.Property) {
-	err := client.Schema().PropertyCreator().WithClassName(className).WithProperty(property).Do(context.Background())
-	errorutils.LogOnErr(logrus.WithFields(logrus.Fields{"class_name": className, "property_name": property.Name, "property_data_type": property.DataType}), "error creating property", err)
 	return
 }
 
-func getClass(client *weaviate.Client, name string) (class *models.Class) {
-	var err error
-	class, err = client.Schema().ClassGetter().WithClassName(name).Do(context.Background())
-	errorutils.LogOnErr(logrus.WithField("class_name", name), "error getting class", err)
-	return
+func createProperty(client *weaviate.Client, className string, property *models.Property) (err error) {
+	return client.Schema().PropertyCreator().WithClassName(className).WithProperty(property).Do(context.Background())
 }
 
-func createClass(client *weaviate.Client, class models.Class) {
-	// all classes use contextionary
-	class.Vectorizer = "text2vec-contextionary"
-	err := client.Schema().ClassCreator().WithClass(&class).Do(context.Background())
-	errorutils.LogOnErr(logrus.WithField("class_name", class.Class), "error creating class", err)
+func getClass(client *weaviate.Client, name string) (class *models.Class, err error) {
+	return client.Schema().ClassGetter().WithClassName(name).Do(context.Background())
 }
 
-func classExists(client *weaviate.Client, name string) (exists bool) {
-	var err error
-	exists, err = client.Schema().ClassExistenceChecker().WithClassName(name).Do(context.Background())
-	errorutils.LogOnErr(logrus.WithField("class_name", name), "error checking class existence", err)
-	return
+func createClass(client *weaviate.Client, class models.Class) (err error) {
+	return client.Schema().ClassCreator().WithClass(&class).Do(context.Background())
+}
+
+func classExists(client *weaviate.Client, name string) (exists bool, err error) {
+	return client.Schema().ClassExistenceChecker().WithClassName(name).Do(context.Background())
 }
 
 func containsProperty(source []*models.Property, property *models.Property) bool {

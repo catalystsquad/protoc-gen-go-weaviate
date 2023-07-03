@@ -14,19 +14,20 @@ extend google.protobuf.FileOptions {
 message WeaviateFileOptions {
 }
 
+// Validation rules applied at the message level
 extend google.protobuf.MessageOptions {
-    WeaviateMessageOptions opts = 52119;
+  // ormable will cause orm code to be generated for this message/object
+  WeaviateMessageOptions opts = 52119;
 }
 
 message WeaviateMessageOptions {
-  bool ignore = 1;
 }
 
 // Field level specifications
 extend google.protobuf.FieldOptions {
-    WeaviateFieldOptions field = 52119;
+  WeaviateFieldOptions field = 52119;
 }
 
 message WeaviateFieldOptions {
-  bool ignore = 1;
+  bool ignore = 7;
 }

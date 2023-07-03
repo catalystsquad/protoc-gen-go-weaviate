@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
-	example "github.com/catalystsquad/protoc-gen-go-weaviate/example"
+	"github.com/catalystsquad/app-utils-go/errorutils"
+	. "github.com/catalystsquad/protoc-gen-go-weaviate/example"
+	"github.com/google/go-cmp/cmp"
+	"github.com/orlangure/gnomock"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -13,8 +16,8 @@ import (
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/data/replication"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/graphql"
 	"github.com/weaviate/weaviate/entities/models"
+	"google.golang.org/protobuf/testing/protocmp"
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -22,8 +25,8 @@ import (
 const weaviateScheme = "http"
 const weaviateHost = "localhost:8080"
 
-var thingClass = lo.ToPtr(example.Thing{}).ToWeaviateModel().WeaviateClassName()
-var thing2Class = lo.ToPtr(example.Thing2{}).ToWeaviateModel().WeaviateClassName()
+var thingClass = lo.ToPtr(Thing{}).ToWeaviateModel().WeaviateClassName()
+var thing2Class = lo.ToPtr(Thing2{}).ToWeaviateModel().WeaviateClassName()
 var weaviateGraphqlUrl = fmt.Sprintf("%s://%s/v1/graphql", weaviateScheme, weaviateHost)
 var httpClient = &http.Client{}
 var weaviateClient = client.New(client.Config{
@@ -39,17 +42,23 @@ func TestPluginSuite(t *testing.T) {
 	suite.Run(t, new(PluginSuite))
 }
 
+func (s *PluginSuite) SetupSuite() {
+	s.T().Parallel()
+	startWeaviate(s.T())
+}
 func (s *PluginSuite) TestPlugin() {
-	example.Thing2WeaviateModel{}.EnsureClass(weaviateClient)
-	example.ThingWeaviateModel{}.EnsureClass(weaviateClient)
+	err := Thing2WeaviateModel{}.EnsureClass(weaviateClient, false)
+	require.NoError(s.T(), err)
+	err = ThingWeaviateModel{}.EnsureClass(weaviateClient, false)
+	require.NoError(s.T(), err)
 	// create protos
-	thing := example.Thing{}
-	associatedThing1 := example.Thing2{}
-	associatedThing2 := example.Thing2{}
-	associatedThing3 := example.Thing2{}
-	associatedThing4 := example.Thing2{}
+	thing := &Thing{}
+	associatedThing1 := Thing2{}
+	associatedThing2 := Thing2{}
+	associatedThing3 := Thing2{}
+	associatedThing4 := Thing2{}
 	// populate protos
-	err := gofakeit.Struct(&thing)
+	err = gofakeit.Struct(&thing)
 	require.NoError(s.T(), err)
 	thing.ABytes = []byte(gofakeit.HackerPhrase())
 	err = gofakeit.Struct(&associatedThing1)
@@ -63,7 +72,7 @@ func (s *PluginSuite) TestPlugin() {
 	// set associated protos
 	thing.AssociatedThing = &associatedThing1
 	thing.OptionalAssociatedThing = &associatedThing2
-	thing.RepeatedMessages = []*example.Thing2{&associatedThing3, &associatedThing4}
+	thing.RepeatedMessages = []*Thing2{&associatedThing3, &associatedThing4}
 	// create associated things
 	for _, thing2 := range thing.RepeatedMessages {
 		_, err = thing2.ToWeaviateModel().Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
@@ -80,16 +89,24 @@ func (s *PluginSuite) TestPlugin() {
 	response := s.queryForThings()
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	resultThing := things[0]
-	require.True(s.T(), reflect.DeepEqual(thing.ToWeaviateModel(), resultThing))
-}
-
-func (s *PluginSuite) SetupTest() {
-	s.deleteClasses()
-}
-
-func (s *PluginSuite) deleteClasses() {
-	s.deleteClass(thingClass)
-	s.deleteClass(thing2Class)
+	resultThingProto := resultThing.ToProto()
+	assertProtoEquality(s.T(), thing, resultThingProto)
+	// update related object
+	updatedThing := resultThingProto.AssociatedThing
+	name := gofakeit.Name()
+	require.NotEqual(s.T(), updatedThing.Name, name)
+	updatedThing.Name = name
+	updatedThingModel := updatedThing.ToWeaviateModel()
+	err = updatedThingModel.Update(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	require.NoError(s.T(), err)
+	// query again
+	postUpdateResponse := s.queryForThings()
+	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
+	require.NoError(s.T(), err)
+	postUpdateResultThing := postUpdateThings[0]
+	postUpdateResultThingProto := postUpdateResultThing.ToProto()
+	// ensure the update is correct
+	assertProtoEquality(s.T(), updatedThing, postUpdateResultThingProto.AssociatedThing)
 }
 
 func (s *PluginSuite) deleteClass(class string) {
@@ -121,18 +138,10 @@ var thingFields = []graphql.Field{
 	{Name: "aBool"},
 	{Name: "aBytes"},
 	{Name: "aDouble"},
-	{Name: "aFixed32"},
-	{Name: "aFixed64"},
 	{Name: "aFloat"},
 	{Name: "aString"},
-	{Name: "aUint32"},
-	{Name: "aUint64"},
 	{Name: "anInt32"},
 	{Name: "anInt64"},
-	{Name: "anSfixed32"},
-	{Name: "anSfixed64"},
-	{Name: "anSint32"},
-	{Name: "anSint64"},
 	{Name: "optionalScalarField"},
 	{Name: "repeatedScalarField"},
 	{
@@ -188,7 +197,7 @@ func convertType(source, dest interface{}) error {
 	return err
 }
 
-func ThingWeaviateModelsFromGraphqlResult(response *models.GraphQLResponse) (models []example.ThingWeaviateModel, err error) {
+func ThingWeaviateModelsFromGraphqlResult(response *models.GraphQLResponse) (models []ThingWeaviateModel, err error) {
 	var data []map[string]interface{}
 	var dataBytes []byte
 	responseObjects := response.Data["Get"].(map[string]interface{})["Thing"]
@@ -208,25 +217,25 @@ func ThingWeaviateModelsFromGraphqlResult(response *models.GraphQLResponse) (mod
 		associationsMap["repeatedMessages"] = obj["repeatedMessages"]
 		delete(obj, "repeatedMessages")
 		obj["id"] = getIdFromAdditional(obj)
-		var model example.ThingWeaviateModel
+		var model ThingWeaviateModel
 		if err = convertType(obj, &model); err != nil {
 			return
 		}
-		var associatedThing []example.Thing2WeaviateModel
+		var associatedThing []Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "associatedThing", &associatedThing); err != nil {
 			return
 		}
 		if len(associatedThing) > 0 {
 			model.AssociatedThing = associatedThing[0]
 		}
-		var optionalAssociatedThing []example.Thing2WeaviateModel
+		var optionalAssociatedThing []Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "optionalAssociatedThing", &optionalAssociatedThing); err != nil {
 			return
 		}
 		if len(optionalAssociatedThing) > 0 {
 			model.OptionalAssociatedThing = &optionalAssociatedThing[0]
 		}
-		var associatedThings []example.Thing2WeaviateModel
+		var associatedThings []Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "repeatedMessages", &associatedThings); err != nil {
 			return
 		}
@@ -259,4 +268,31 @@ func getIdFromAdditional(obj map[string]interface{}) (id string) {
 		id = additional.(map[string]interface{})["id"].(string)
 	}
 	return
+}
+
+func startWeaviate(t *testing.T) {
+	container, err := gnomock.StartCustom(
+		"semitechnologies/weaviate",
+		gnomock.NamedPorts{"default": gnomock.Port{
+			Protocol: "tcp",
+			Port:     8080,
+			HostPort: 8080,
+		}},
+		gnomock.WithEnv("AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true"),
+		gnomock.WithEnv("DEFAULT_VECTORIZER_MODULE=none"),
+		gnomock.WithEnv("PERSISTENCE_DATA_PATH=/tmp/weaviate"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := gnomock.Stop(container)
+		errorutils.LogOnErr(nil, "error stopping weaviate container", err)
+	})
+}
+
+func assertProtoEquality(t *testing.T, expected, actual interface{}, options ...cmp.Option) {
+	opts := append([]cmp.Option{
+		protocmp.Transform(),
+	}, options...)
+	diff := cmp.Diff(expected, actual, opts...)
+	require.Empty(t, diff)
 }
