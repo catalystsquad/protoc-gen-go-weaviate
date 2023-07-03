@@ -1,11 +1,6 @@
 package example_example
 
 import (
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	time "time"
-)
-
-import (
 	"context"
 	"fmt"
 	"github.com/samber/lo"
@@ -55,9 +50,6 @@ type ThingWeaviateModel struct {
 
 	// @gotags: fake:"skip"
 	RepeatedMessages []Thing2WeaviateModel `json:"repeatedMessages" fake:"skip"`
-
-	// @gotags: fake:"skip"
-	ATimestamp *time.Time `json:"aTimestamp" fake:"skip"`
 }
 
 func (s ThingWeaviateModel) ToProto() *Thing {
@@ -94,10 +86,6 @@ func (s ThingWeaviateModel) ToProto() *Thing {
 		} else {
 			theProto.RepeatedMessages = append(theProto.RepeatedMessages, msg)
 		}
-	}
-
-	if s.ATimestamp != nil {
-		theProto.ATimestamp = timestamppb.New(*s.ATimestamp)
 	}
 
 	return theProto
@@ -141,10 +129,6 @@ func (s *Thing) ToWeaviateModel() ThingWeaviateModel {
 		} else {
 			model.RepeatedMessages = append(model.RepeatedMessages, msg)
 		}
-	}
-
-	if s.ATimestamp != nil {
-		model.ATimestamp = lo.ToPtr(s.ATimestamp.AsTime())
 	}
 
 	return model
@@ -199,9 +183,6 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 		Name:     "repeatedMessages",
 		DataType: []string{"Thing2"},
 	}, {
-		Name:     "aTimestamp",
-		DataType: []string{"date"},
-	}, {
 		Name:     "anIgnoredField",
 		DataType: []string{"text"},
 	},
@@ -234,8 +215,6 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 		"optionalAssociatedThing": []map[string]string{},
 
 		"repeatedMessages": []map[string]string{},
-
-		"aTimestamp": s.ATimestamp,
 	}
 
 	data = s.addCrossReferenceData(data)
