@@ -3,7 +3,7 @@ syntax = "proto3";
 package test;
 
 option go_package = "example.example";
-
+option (weaviate.file_opts) = {generate: true};
 import "options/weaviate.proto";
 import "google/protobuf/timestamp.proto";
 

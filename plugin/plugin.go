@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -52,7 +53,8 @@ var templateFuncs = map[string]any{
 	"weaviateModelReturnType":  getWeaviateModelReturnType,
 	"includeField":             includeField,
 	"isTimestamp":              isTimestamp,
-	"shouldGenerate":           shouldGenerate,
+	"shouldGenerateMessage":    shouldGenerateMessage,
+	"shouldGenerateFile":       shouldGenerateFile,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -97,22 +99,24 @@ func parseParameter(param string) map[string]string {
 
 func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err error) {
 	for _, protoFile := range b.plugin.Files {
-		var tpl *template.Template
-		templateFuncs["package"] = func() string { return string(protoFile.GoPackageName) }
-		if tpl, err = template.New("weaviate").Funcs(templateFuncs).Parse(WeaviateTemplate); err != nil {
-			return
-		}
-		fileName := protoFile.GeneratedFilenamePrefix + ".pb.weaviate.go"
-		g = b.plugin.NewGeneratedFile(fileName, ".")
-		var data bytes.Buffer
-		templateMap := map[string]any{
-			"messages": protoFile.Messages,
-		}
-		if err = tpl.Execute(&data, templateMap); err != nil {
-			return
-		}
-		if _, err = g.Write(data.Bytes()); err != nil {
-			return
+		if shouldGenerateFile(protoFile) {
+			var tpl *template.Template
+			templateFuncs["package"] = func() string { return string(protoFile.GoPackageName) }
+			if tpl, err = template.New("weaviate").Funcs(templateFuncs).Parse(WeaviateTemplate); err != nil {
+				return
+			}
+			fileName := protoFile.GeneratedFilenamePrefix + ".pb.weaviate.go"
+			g = b.plugin.NewGeneratedFile(fileName, ".")
+			var data bytes.Buffer
+			templateMap := map[string]any{
+				"messages": protoFile.Messages,
+			}
+			if err = tpl.Execute(&data, templateMap); err != nil {
+				return
+			}
+			if _, err = g.Write(data.Bytes()); err != nil {
+				return
+			}
 		}
 	}
 	response = b.plugin.Response()
@@ -334,7 +338,7 @@ func isTimestamp(field *protogen.Field) bool {
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
 }
 
-func shouldGenerate(message *protogen.Message) bool {
+func shouldGenerateMessage(message *protogen.Message) bool {
 	options := getMessageOptions(message)
 	return options.Generate
 }
@@ -351,6 +355,27 @@ func getMessageOptions(message *protogen.Message) *weaviate.WeaviateMessageOptio
 	}
 
 	opts, ok := v.(*weaviate.WeaviateMessageOptions)
+	if !ok {
+		return nil
+	}
+	return opts
+}
+
+func shouldGenerateFile(file *protogen.File) bool {
+	options := getFileOptions(file)
+	return options != nil && options.Generate
+}
+
+func getFileOptions(file *protogen.File) *weaviate.WeaviateFileOptions {
+	options := file.Desc.Options().(*descriptorpb.FileOptions)
+	if options == nil {
+		return &weaviate.WeaviateFileOptions{}
+	}
+	v := proto.GetExtension(options, weaviate.E_FileOpts)
+	if reflect.ValueOf(v).IsNil() {
+		return nil
+	}
+	opts, ok := v.(*weaviate.WeaviateFileOptions)
 	if !ok {
 		return nil
 	}
