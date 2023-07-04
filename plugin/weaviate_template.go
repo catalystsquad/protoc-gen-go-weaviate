@@ -14,7 +14,7 @@ import (
 )
 
 {{ range .messages }}
-{{ if shouldGenerate . }}
+{{ if shouldGenerateMessage . }}
 type {{ structName . }} struct {
 	{{- range .Fields }}
 	{{ if includeField . }}
