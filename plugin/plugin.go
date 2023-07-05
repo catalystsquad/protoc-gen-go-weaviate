@@ -43,7 +43,7 @@ var templateFuncs = map[string]any{
 	"propertyName":             getPropertyName,
 	"propertyDataType":         getPropertyDataType,
 	"dataField":                getDataField,
-	"fieldIsCrossReference":    fieldIsCrossReference,
+	"fieldIsCrossReference":    isStructType,
 	"fieldIsMessage":           isStructType,
 	"fieldIsRepeated":          fieldIsRepeated,
 	"fieldComments":            getFieldComments,
@@ -154,8 +154,7 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
 		datatype = "*time.Time"
 	} else if isStructPb(field) {
-		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/structpb"})
-		datatype = "*structpb.Struct"
+		datatype = "string"
 	} else if isStructType(field) {
 		datatype = getStructFieldStructType(field)
 	} else {
@@ -171,11 +170,7 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 }
 
 func isStructType(field *protogen.Field) bool {
-	return !isTimestamp(field) && field.Message != nil
-}
-
-func fieldIsCrossReference(field *protogen.Field) bool {
-	return isStructType(field) && !isStructPb(field)
+	return field.Message != nil && !isTimestamp(field) && !isStructPb(field)
 }
 
 func getStructFieldStructType(field *protogen.Field) string {
@@ -243,6 +238,10 @@ func getPropertyName(field *protogen.Field) string {
 }
 
 func getPropertyDataType(field *protogen.Field) (datatype string) {
+	if isStructPb(field) {
+		datatype = "text"
+		return
+	}
 	if isStructType(field) {
 		datatype = getFieldClassName(field)
 		return
@@ -347,6 +346,7 @@ func isTimestamp(field *protogen.Field) bool {
 }
 
 func isStructPb(field *protogen.Field) bool {
+	g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "encoding/json"})
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Struct"
 }
 

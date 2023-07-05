@@ -1,7 +1,7 @@
 package example_example
 
 import (
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	json "encoding/json"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	time "time"
 )
@@ -61,11 +61,11 @@ type ThingWeaviateModel struct {
 	ATimestamp *time.Time `json:"aTimestamp" fake:"skip"`
 
 	// @gotags: fake:"skip"
-	AStructField *structpb.Struct `json:"aStructField" fake:"skip"`
+	AStructField string `json:"aStructField" fake:"skip"`
 }
 
-func (s ThingWeaviateModel) ToProto() *Thing {
-	theProto := &Thing{}
+func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
+	theProto = &Thing{}
 
 	theProto.Id = s.Id
 
@@ -87,12 +87,19 @@ func (s ThingWeaviateModel) ToProto() *Thing {
 
 	theProto.OptionalScalarField = s.OptionalScalarField
 
-	theProto.AssociatedThing = s.AssociatedThing.ToProto()
+	if theProto.AssociatedThing, err = s.AssociatedThing.ToProto(); err != nil {
+		return
+	}
 
-	theProto.OptionalAssociatedThing = s.OptionalAssociatedThing.ToProto()
+	if theProto.OptionalAssociatedThing, err = s.OptionalAssociatedThing.ToProto(); err != nil {
+		return
+	}
 
 	for _, protoField := range s.RepeatedMessages {
-		msg := protoField.ToProto()
+		msg, err := protoField.ToProto()
+		if err != nil {
+			return nil, err
+		}
 		if theProto.RepeatedMessages == nil {
 			theProto.RepeatedMessages = []*Thing2{msg}
 		} else {
@@ -104,13 +111,17 @@ func (s ThingWeaviateModel) ToProto() *Thing {
 		theProto.ATimestamp = timestamppb.New(*s.ATimestamp)
 	}
 
-	theProto.AStructField = s.AStructField
+	if s.AStructField != "" {
+		if err = json.Unmarshal([]byte(s.AStructField), &theProto.AStructField); err != nil {
+			return
+		}
+	}
 
-	return theProto
+	return
 }
 
-func (s *Thing) ToWeaviateModel() ThingWeaviateModel {
-	model := ThingWeaviateModel{}
+func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
+	model = ThingWeaviateModel{}
 
 	model.Id = s.Id
 
@@ -133,15 +144,24 @@ func (s *Thing) ToWeaviateModel() ThingWeaviateModel {
 	model.OptionalScalarField = s.OptionalScalarField
 
 	if s.AssociatedThing != nil {
-		model.AssociatedThing = s.AssociatedThing.ToWeaviateModel()
+		if model.AssociatedThing, err = s.AssociatedThing.ToWeaviateModel(); err != nil {
+			return
+		}
 	}
 
 	if s.OptionalAssociatedThing != nil {
-		model.OptionalAssociatedThing = lo.ToPtr(s.OptionalAssociatedThing.ToWeaviateModel())
+		modelOptionalAssociatedThing, err := s.OptionalAssociatedThing.ToWeaviateModel()
+		if err != nil {
+			return model, err
+		}
+		model.OptionalAssociatedThing = lo.ToPtr(modelOptionalAssociatedThing)
 	}
 
 	for _, protoField := range s.RepeatedMessages {
-		msg := protoField.ToWeaviateModel()
+		msg, err := protoField.ToWeaviateModel()
+		if err != nil {
+			return model, err
+		}
 		if model.RepeatedMessages == nil {
 			model.RepeatedMessages = []Thing2WeaviateModel{msg}
 		} else {
@@ -153,9 +173,15 @@ func (s *Thing) ToWeaviateModel() ThingWeaviateModel {
 		model.ATimestamp = lo.ToPtr(s.ATimestamp.AsTime())
 	}
 
-	model.AStructField = s.AStructField
+	AStructFieldBytes, err := s.AStructField.MarshalJSON()
+	if err != nil {
+		return model, err
+	}
+	if AStructFieldBytes != nil {
+		model.AStructField = string(AStructFieldBytes)
+	}
 
-	return model
+	return
 }
 
 func (s ThingWeaviateModel) WeaviateClassName() string {
@@ -214,7 +240,7 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 		DataType: []string{"text"},
 	}, {
 		Name:     "aStructField",
-		DataType: []string{"Struct"},
+		DataType: []string{"text"},
 	},
 	}
 }
@@ -248,7 +274,7 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 
 		"aTimestamp": s.ATimestamp,
 
-		"aStructField": []map[string]string{},
+		"aStructField": s.AStructField,
 	}
 
 	data = s.addCrossReferenceData(data)
@@ -314,24 +340,24 @@ type Thing2WeaviateModel struct {
 	Name string `json:"name" fake:"{name}"`
 }
 
-func (s Thing2WeaviateModel) ToProto() *Thing2 {
-	theProto := &Thing2{}
+func (s Thing2WeaviateModel) ToProto() (theProto *Thing2, err error) {
+	theProto = &Thing2{}
 
 	theProto.Id = s.Id
 
 	theProto.Name = s.Name
 
-	return theProto
+	return
 }
 
-func (s *Thing2) ToWeaviateModel() Thing2WeaviateModel {
-	model := Thing2WeaviateModel{}
+func (s *Thing2) ToWeaviateModel() (model Thing2WeaviateModel, err error) {
+	model = Thing2WeaviateModel{}
 
 	model.Id = s.Id
 
 	model.Name = s.Name
 
-	return model
+	return
 }
 
 func (s Thing2WeaviateModel) WeaviateClassName() string {

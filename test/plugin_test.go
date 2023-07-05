@@ -9,7 +9,6 @@ import (
 	. "github.com/catalystsquad/protoc-gen-go-weaviate/example"
 	"github.com/google/go-cmp/cmp"
 	"github.com/orlangure/gnomock"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	client "github.com/weaviate/weaviate-go-client/v4/weaviate"
@@ -17,6 +16,7 @@ import (
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/graphql"
 	"github.com/weaviate/weaviate/entities/models"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
 	"net/http"
 	"strings"
 	"testing"
@@ -25,8 +25,8 @@ import (
 const weaviateScheme = "http"
 const weaviateHost = "localhost:8080"
 
-var thingClass = lo.ToPtr(Thing{}).ToWeaviateModel().WeaviateClassName()
-var thing2Class = lo.ToPtr(Thing2{}).ToWeaviateModel().WeaviateClassName()
+var thingClass = ThingWeaviateModel{}.WeaviateClassName()
+var thing2Class = Thing2WeaviateModel{}.WeaviateClassName()
 var weaviateGraphqlUrl = fmt.Sprintf("%s://%s/v1/graphql", weaviateScheme, weaviateHost)
 var httpClient = &http.Client{}
 var weaviateClient = client.New(client.Config{
@@ -60,6 +60,15 @@ func (s *PluginSuite) TestPlugin() {
 	// populate protos
 	err = gofakeit.Struct(&thing)
 	require.NoError(s.T(), err)
+	thing.AStructField = &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: gofakeit.Name(),
+				},
+			},
+		},
+	}
 	thing.ABytes = []byte(gofakeit.HackerPhrase())
 	err = gofakeit.Struct(&associatedThing1)
 	require.NoError(s.T(), err)
@@ -75,28 +84,38 @@ func (s *PluginSuite) TestPlugin() {
 	thing.RepeatedMessages = []*Thing2{&associatedThing3, &associatedThing4}
 	// create associated things
 	for _, thing2 := range thing.RepeatedMessages {
-		_, err = thing2.ToWeaviateModel().Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+		model, err := thing2.ToWeaviateModel()
+		require.NoError(s.T(), err)
+		_, err = model.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
 		require.NoError(s.T(), err)
 	}
-	_, err = thing.AssociatedThing.ToWeaviateModel().Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	associatedThingModel, err := thing.AssociatedThing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = thing.OptionalAssociatedThing.ToWeaviateModel().Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = associatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	require.NoError(s.T(), err)
+	optionalAssociatedThingModel, err := thing.OptionalAssociatedThing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = optionalAssociatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
 	require.NoError(s.T(), err)
 	// create thing
-	_, err = thing.ToWeaviateModel().Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	thingModel, err := thing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = thingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
 	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings()
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	resultThing := things[0]
-	resultThingProto := resultThing.ToProto()
+	resultThingProto, err := resultThing.ToProto()
+	require.NoError(s.T(), err)
 	assertProtoEquality(s.T(), thing, resultThingProto)
 	// update related object
 	updatedThing := resultThingProto.AssociatedThing
 	name := gofakeit.Name()
 	require.NotEqual(s.T(), updatedThing.Name, name)
 	updatedThing.Name = name
-	updatedThingModel := updatedThing.ToWeaviateModel()
+	updatedThingModel, err := updatedThing.ToWeaviateModel()
+	require.NoError(s.T(), err)
 	err = updatedThingModel.Update(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
 	require.NoError(s.T(), err)
 	// query again
@@ -104,7 +123,8 @@ func (s *PluginSuite) TestPlugin() {
 	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
 	require.NoError(s.T(), err)
 	postUpdateResultThing := postUpdateThings[0]
-	postUpdateResultThingProto := postUpdateResultThing.ToProto()
+	postUpdateResultThingProto, err := postUpdateResultThing.ToProto()
+	require.NoError(s.T(), err)
 	// ensure the update is correct
 	assertProtoEquality(s.T(), updatedThing, postUpdateResultThingProto.AssociatedThing)
 }
@@ -186,6 +206,7 @@ var thingFields = []graphql.Field{
 			},
 		},
 	},
+	{Name: "aStructField"},
 }
 
 func convertType(source, dest interface{}) error {

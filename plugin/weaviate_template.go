@@ -24,44 +24,66 @@ type {{ structName . }} struct {
 	{{ end }}
 }
 
-func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
-    theProto := &{{ protoStructName . }}{}
+func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err error) {
+    theProto = &{{ protoStructName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
 	if s.{{ .GoName }} != nil {
 		theProto.{{ .GoName }} = timestamppb.New(*s.{{ .GoName }})
 	}
-	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) (not (isStructPb .)) }}
+	{{- else if isStructPb . }}
+	if s.{{ .GoName }} != "" {
+		if err = json.Unmarshal([]byte(s.{{ .GoName }}), &theProto.{{ .GoName }}); err != nil {
+			return
+		}
+	}
+	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) }}
     for _, protoField := range s.{{ structFieldName . }} {
-		msg := protoField.ToProto()
+		msg, err := protoField.ToProto()
+		if err != nil {
+			return nil, err
+		}
 		if theProto.{{ structFieldName . }} == nil {
 			theProto.{{ structFieldName . }} = []*{{ protoStructTypeFromField . }}{msg}
 		} else {
 			theProto.{{ structFieldName . }} = append(theProto.{{ structFieldName . }}, msg)
 		}
 	}
-    {{- else if and (fieldIsMessage .) (not (isStructPb .)) }}
-	theProto.{{ structFieldName . }} = s.{{ structFieldName . }}.ToProto()
+    {{- else if and (fieldIsMessage .) }}
+	if theProto.{{ structFieldName . }}, err = s.{{ structFieldName . }}.ToProto(); err != nil {
+		return
+	}
     {{- else }}
     theProto.{{ structFieldName . }} = s.{{ structFieldName . }}
     {{ end }}
 	{{ end }}
 	{{ end }}
-    return theProto
+    return
 }
 
-func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
-    model := {{ structName . }}{}
+func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, err error) {
+    model = {{ structName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
 	if s.{{ .GoName }} != nil {
 		model.{{ .GoName }} = lo.ToPtr(s.{{ .GoName }}.AsTime())
 	}
+	{{- else if isStructPb . }}
+	{{ structFieldName . }}Bytes, err := s.{{ structFieldName . }}.MarshalJSON()
+	if err != nil {
+		return model, err
+	}
+	if {{ structFieldName . }}Bytes != nil {
+		model.{{ structFieldName . }} = string({{ structFieldName . }}Bytes)
+	}
 	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) (not (isStructPb .)) }}
     for _, protoField := range s.{{ structFieldName . }} {
-		msg := protoField.ToWeaviateModel()
+		msg, err := protoField.ToWeaviateModel()
+		if err != nil {
+			return model, err
+		}
 		if model.{{ structFieldName . }} == nil {
 			model.{{ structFieldName . }} = {{ structFieldType . }}{msg}
 		} else {
@@ -70,18 +92,24 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
 	}
     {{- else if and (fieldIsMessage .) (not (fieldIsOptional .)) (not (isStructPb .)) }}
 	if s.{{ structFieldName . }} != nil {
-	model.{{ structFieldName . }} = s.{{ structFieldName . }}.ToWeaviateModel()
+		if model.{{ structFieldName . }}, err = s.{{ structFieldName . }}.ToWeaviateModel(); err != nil {
+			return
+		}
 	}
 	{{- else if and (fieldIsMessage .) (fieldIsOptional .) (not (isStructPb .)) }}
 	if s.{{ structFieldName . }} != nil {
-		model.{{ structFieldName . }} = lo.ToPtr(s.{{ structFieldName . }}.ToWeaviateModel())
+		model{{ structFieldName . }}, err := s.{{ structFieldName . }}.ToWeaviateModel()
+		if err != nil {
+			return model, err
+		}
+		model.{{ structFieldName . }} = lo.ToPtr(model{{ structFieldName . }})
 	}
     {{- else }}
     model.{{ structFieldName . }} = s.{{ structFieldName . }}
     {{ end }}
 	{{ end }}
 	{{ end }}
-    return model
+    return
 }
 
 func (s {{ structName . }}) WeaviateClassName() string {
