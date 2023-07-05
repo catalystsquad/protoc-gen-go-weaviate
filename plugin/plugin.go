@@ -31,31 +31,33 @@ var g *protogen.GeneratedFile
 const SUPPORTS_OPTIONAL_FIELDS = 1
 
 var templateFuncs = map[string]any{
-	"protoStructName":          getProtoStructName,
-	"protoStructTypeFromField": getProtoStructTypeFromField,
-	"protoStructType":          getProtoStructType,
-	"structName":               getStructName,
-	"structField":              getStructField,
-	"structFieldName":          getStructFieldName,
-	"structFieldType":          getStructFieldType,
-	"className":                getClassName,
-	"fieldClassName":           getFieldClassName,
-	"propertyName":             getPropertyName,
-	"propertyDataType":         getPropertyDataType,
-	"dataField":                getDataField,
-	"fieldIsCrossReference":    isStructType,
-	"fieldIsMessage":           isStructType,
-	"fieldIsRepeated":          fieldIsRepeated,
-	"fieldComments":            getFieldComments,
-	"jsonTag":                  getJsonTag,
-	"jsonFieldName":            jsonFieldName,
-	"fieldIsOptional":          fieldIsOptional,
-	"weaviateModelReturnType":  getWeaviateModelReturnType,
-	"includeField":             includeField,
-	"isTimestamp":              isTimestamp,
-	"shouldGenerateMessage":    shouldGenerateMessage,
-	"shouldGenerateFile":       shouldGenerateFile,
-	"isStructPb":               isStructPb,
+	"protoStructName":                 getProtoStructName,
+	"protoStructTypeFromField":        getProtoStructTypeFromField,
+	"protoStructType":                 getProtoStructType,
+	"structName":                      getStructName,
+	"structField":                     getStructField,
+	"structFieldName":                 getStructFieldName,
+	"structFieldType":                 getStructFieldType,
+	"className":                       getClassName,
+	"fieldClassName":                  getFieldClassName,
+	"propertyName":                    getPropertyName,
+	"propertyDataType":                getPropertyDataType,
+	"dataField":                       getDataField,
+	"fieldIsCrossReference":           isStructType,
+	"fieldIsMessage":                  isStructType,
+	"fieldIsRepeated":                 fieldIsRepeated,
+	"fieldComments":                   getFieldComments,
+	"jsonTag":                         getJsonTag,
+	"jsonFieldName":                   jsonFieldName,
+	"fieldIsOptional":                 fieldIsOptional,
+	"weaviateModelReturnType":         getWeaviateModelReturnType,
+	"includeField":                    includeField,
+	"isTimestamp":                     isTimestamp,
+	"shouldGenerateMessage":           shouldGenerateMessage,
+	"shouldGenerateFile":              shouldGenerateFile,
+	"isStructPb":                      isStructPb,
+	"idFieldIsOptional":               idFieldIsOptional,
+	"crossReferenceIdFieldIsOptional": crossReferenceIdFieldIsOptional,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -221,6 +223,24 @@ func marshallJsonAsString(field *protogen.Field) bool {
 
 func fieldIsOptional(field *protogen.Field) bool {
 	return field.Desc.HasOptionalKeyword()
+}
+
+func idFieldIsOptional(message *protogen.Message) bool {
+	for _, field := range message.Fields {
+		if field.GoName == "Id" {
+			return field.Desc.HasOptionalKeyword()
+		}
+	}
+	return false
+}
+
+func crossReferenceIdFieldIsOptional(field *protogen.Field) bool {
+	for _, field := range field.Message.Fields {
+		if field.GoName == "Id" {
+			return field.Desc.HasOptionalKeyword()
+		}
+	}
+	return false
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {

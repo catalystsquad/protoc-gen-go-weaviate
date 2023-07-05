@@ -157,15 +157,29 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
     {{- if fieldIsCrossReference . -}}
     {{- if fieldIsRepeated . }}
 	for _, crossReference := range s.{{ structFieldName . }} {
-      {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", crossReference.Id)}
+      {{- if crossReferenceIdFieldIsOptional . }}
+      id := lo.FromPtr(crossReference.Id)
+	  {{- else }}
+      id := crossReference.Id
+      {{ end }}
+      {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
 	  data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
 	}
     {{- else }}
 	{{ if fieldIsOptional . -}}
 	if s.{{ structFieldName . }} != nil {
     {{- end -}}
-    if s.{{ structFieldName . }}.Id != "" {
-	{{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", s.{{ structFieldName . }}.Id)}
+	{{- if crossReferenceIdFieldIsOptional . }}
+	if lo.FromPtr(s.{{ structFieldName . }}.Id) != "" {
+	{{- else }}
+	if s.{{ structFieldName . }}.Id != "" {
+	{{- end }}
+	{{- if crossReferenceIdFieldIsOptional . }}
+    id := lo.FromPtr(s.{{ structFieldName . }}.Id)
+    {{- else }}
+    id := s.{{ structFieldName . }}.Id
+    {{ end }}
+	{{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
     data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
     }
 	{{ if fieldIsOptional . -}}
@@ -181,7 +195,11 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(s.Data()).
+		{{- if idFieldIsOptional . }}
+		WithID(lo.FromPtr(s.Id)).
+		{{- else }}
 		WithID(s.Id).
+		{{- end }}
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -189,7 +207,11 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
+		{{- if idFieldIsOptional . }}
+		WithID(lo.FromPtr(s.Id)).
+		{{- else }}
 		WithID(s.Id).
+		{{- end }}
 		WithProperties(s.Data()).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
@@ -198,7 +220,11 @@ func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client,
 func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
+		{{- if idFieldIsOptional . }}
+		WithID(lo.FromPtr(s.Id)).
+		{{- else }}
 		WithID(s.Id).
+		{{- end }}
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
