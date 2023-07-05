@@ -32,7 +32,7 @@ func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
 	if s.{{ .GoName }} != nil {
 		theProto.{{ .GoName }} = timestamppb.New(*s.{{ .GoName }})
 	}
-	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) }}
+	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) (not (isStructPb .)) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToProto()
 		if theProto.{{ structFieldName . }} == nil {
@@ -41,7 +41,7 @@ func (s {{ structName . }}) ToProto() *{{ protoStructName . }} {
 			theProto.{{ structFieldName . }} = append(theProto.{{ structFieldName . }}, msg)
 		}
 	}
-    {{- else if fieldIsMessage . }}
+    {{- else if and (fieldIsMessage .) (not (isStructPb .)) }}
 	theProto.{{ structFieldName . }} = s.{{ structFieldName . }}.ToProto()
     {{- else }}
     theProto.{{ structFieldName . }} = s.{{ structFieldName . }}
@@ -59,7 +59,7 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
 	if s.{{ .GoName }} != nil {
 		model.{{ .GoName }} = lo.ToPtr(s.{{ .GoName }}.AsTime())
 	}
-	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) }}
+	{{- else if and (fieldIsMessage .) (fieldIsRepeated .) (not (isStructPb .)) }}
     for _, protoField := range s.{{ structFieldName . }} {
 		msg := protoField.ToWeaviateModel()
 		if model.{{ structFieldName . }} == nil {
@@ -68,11 +68,11 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() {{ structName . }} {
 			model.{{ structFieldName . }} = append(model.{{ structFieldName . }}, msg)
 		}
 	}
-    {{- else if and (fieldIsMessage .) (not (fieldIsOptional .)) }}
+    {{- else if and (fieldIsMessage .) (not (fieldIsOptional .)) (not (isStructPb .)) }}
 	if s.{{ structFieldName . }} != nil {
 	model.{{ structFieldName . }} = s.{{ structFieldName . }}.ToWeaviateModel()
 	}
-	{{- else if and (fieldIsMessage .) (fieldIsOptional .) }}
+	{{- else if and (fieldIsMessage .) (fieldIsOptional .) (not (isStructPb .)) }}
 	if s.{{ structFieldName . }} != nil {
 		model.{{ structFieldName . }} = lo.ToPtr(s.{{ structFieldName . }}.ToWeaviateModel())
 	}

@@ -1,6 +1,7 @@
 package example_example
 
 import (
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	time "time"
 )
@@ -58,6 +59,9 @@ type ThingWeaviateModel struct {
 
 	// @gotags: fake:"skip"
 	ATimestamp *time.Time `json:"aTimestamp" fake:"skip"`
+
+	// @gotags: fake:"skip"
+	AStructField *structpb.Struct `json:"aStructField" fake:"skip"`
 }
 
 func (s ThingWeaviateModel) ToProto() *Thing {
@@ -99,6 +103,8 @@ func (s ThingWeaviateModel) ToProto() *Thing {
 	if s.ATimestamp != nil {
 		theProto.ATimestamp = timestamppb.New(*s.ATimestamp)
 	}
+
+	theProto.AStructField = s.AStructField
 
 	return theProto
 }
@@ -146,6 +152,8 @@ func (s *Thing) ToWeaviateModel() ThingWeaviateModel {
 	if s.ATimestamp != nil {
 		model.ATimestamp = lo.ToPtr(s.ATimestamp.AsTime())
 	}
+
+	model.AStructField = s.AStructField
 
 	return model
 }
@@ -204,6 +212,9 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 	}, {
 		Name:     "anIgnoredField",
 		DataType: []string{"text"},
+	}, {
+		Name:     "aStructField",
+		DataType: []string{"Struct"},
 	},
 	}
 }
@@ -236,6 +247,8 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 		"repeatedMessages": []map[string]string{},
 
 		"aTimestamp": s.ATimestamp,
+
+		"aStructField": []map[string]string{},
 	}
 
 	data = s.addCrossReferenceData(data)

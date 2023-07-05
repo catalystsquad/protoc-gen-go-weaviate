@@ -43,7 +43,7 @@ var templateFuncs = map[string]any{
 	"propertyName":             getPropertyName,
 	"propertyDataType":         getPropertyDataType,
 	"dataField":                getDataField,
-	"fieldIsCrossReference":    isStructType,
+	"fieldIsCrossReference":    fieldIsCrossReference,
 	"fieldIsMessage":           isStructType,
 	"fieldIsRepeated":          fieldIsRepeated,
 	"fieldComments":            getFieldComments,
@@ -55,6 +55,7 @@ var templateFuncs = map[string]any{
 	"isTimestamp":              isTimestamp,
 	"shouldGenerateMessage":    shouldGenerateMessage,
 	"shouldGenerateFile":       shouldGenerateFile,
+	"isStructPb":               isStructPb,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -152,6 +153,9 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "time"})
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
 		datatype = "*time.Time"
+	} else if isStructPb(field) {
+		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/structpb"})
+		datatype = "*structpb.Struct"
 	} else if isStructType(field) {
 		datatype = getStructFieldStructType(field)
 	} else {
@@ -168,6 +172,10 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 
 func isStructType(field *protogen.Field) bool {
 	return !isTimestamp(field) && field.Message != nil
+}
+
+func fieldIsCrossReference(field *protogen.Field) bool {
+	return isStructType(field) && !isStructPb(field)
 }
 
 func getStructFieldStructType(field *protogen.Field) string {
@@ -336,6 +344,10 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 
 func isTimestamp(field *protogen.Field) bool {
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
+}
+
+func isStructPb(field *protogen.Field) bool {
+	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Struct"
 }
 
 func shouldGenerateMessage(message *protogen.Message) bool {

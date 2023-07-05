@@ -6,6 +6,7 @@ option go_package = "example.example";
 option (weaviate.weaviate_file_opts) = {generate: true};
 import "options/weaviate.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 
 message Thing {
   option (weaviate.weaviate_opts) = {generate: true};
@@ -39,6 +40,8 @@ message Thing {
   google.protobuf.Timestamp a_timestamp = 22;
   // @gotags: fake:"skip"
   string an_ignored_field = 23 [(weaviate.weaviate_field).ignore = true];
+  // @gotags: fake:"skip"
+  google.protobuf.Struct a_struct_field = 24;
 }
 
 message Thing2 {
