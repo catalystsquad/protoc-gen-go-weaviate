@@ -51,6 +51,8 @@ message Thing {
   google.protobuf.Struct a_struct_field = 24;
   // @gotags: fake:"{number:1,2}"
   AnEnumType an_enum = 25;
+  // @gotags: fake:"{number: 100,1000}"
+  optional int32 an_optional_int = 26;
 }
 
 message Thing2 {

@@ -286,7 +286,12 @@ func getDataField(field *protogen.Field) (dataField string) {
 	if isStructType(field) {
 		return `[]map[string]string{}`
 	} else {
-		val := fmt.Sprintf(`s.%s`, getStructFieldName(field))
+		val := ""
+		if fieldIsOptional(field) {
+			val = fmt.Sprintf(`lo.FromPtr(s.%s)`, getStructFieldName(field))
+		} else {
+			val = fmt.Sprintf(`s.%s`, getStructFieldName(field))
+		}
 		if isInt64(field) {
 			val = fmt.Sprintf("strconv.FormatInt(%s, 10)", val)
 		} else if isUint64(field) {

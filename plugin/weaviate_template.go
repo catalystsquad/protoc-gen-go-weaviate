@@ -137,15 +137,22 @@ func (s {{ structName . }}) WeaviateClassSchemaProperties() []*models.Property {
 }
 
 func (s {{ structName . }}) Data() map[string]interface{} {
-	data := map[string]interface{}{
-		{{- range .Fields }}
-		{{ if includeField . }}
-        {{- if ne (propertyName .) "id" }}
-        "{{ jsonFieldName . }}": {{ dataField . }},
-		{{- end }}
-		{{- end }}
-		{{- end }}
+	data := map[string]interface{}{}
+	{{- range .Fields }}
+	{{ if includeField . }}
+	{{- if ne (propertyName .) "id" }}
+	{{- if fieldIsOptional . }}
+	if s.{{ .GoName }} != nil {
+	data["{{ jsonFieldName . }}"] = {{ dataField . }}
+	{{- else }}
+	data["{{ jsonFieldName . }}"] = {{ dataField . }}
+	{{ end }}
+	{{- if fieldIsOptional . }}
 	}
+	{{ end }}
+	{{- end }}
+	{{- end }}
+	{{- end }}
 
 	data = s.addCrossReferenceData(data)
 	

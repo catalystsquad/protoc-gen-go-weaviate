@@ -65,6 +65,9 @@ type ThingWeaviateModel struct {
 
 	// @gotags: fake:"{number:1,2}"
 	AnEnum AnEnumType `json:"anEnum" fake:"{number:1,2}"`
+
+	// @gotags: fake:"{number: 100,1000}"
+	AnOptionalInt *int32 `json:"anOptionalInt" fake:"{number: 100,1000}"`
 }
 
 func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
@@ -121,6 +124,8 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 	}
 
 	theProto.AnEnum = s.AnEnum
+
+	theProto.AnOptionalInt = s.AnOptionalInt
 
 	return
 }
@@ -188,6 +193,8 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 
 	model.AnEnum = s.AnEnum
 
+	model.AnOptionalInt = s.AnOptionalInt
+
 	return
 }
 
@@ -251,42 +258,52 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 	}, {
 		Name:     "anEnum",
 		DataType: []string{"int"},
+	}, {
+		Name:     "anOptionalInt",
+		DataType: []string{"int"},
 	},
 	}
 }
 
 func (s ThingWeaviateModel) Data() map[string]interface{} {
-	data := map[string]interface{}{
+	data := map[string]interface{}{}
 
-		"aDouble": s.ADouble,
+	data["aDouble"] = s.ADouble
 
-		"aFloat": s.AFloat,
+	data["aFloat"] = s.AFloat
 
-		"anInt32": s.AnInt32,
+	data["anInt32"] = s.AnInt32
 
-		"anInt64": strconv.FormatInt(s.AnInt64, 10),
+	data["anInt64"] = strconv.FormatInt(s.AnInt64, 10)
 
-		"aBool": s.ABool,
+	data["aBool"] = s.ABool
 
-		"aString": s.AString,
+	data["aString"] = s.AString
 
-		"aBytes": s.ABytes,
+	data["aBytes"] = s.ABytes
 
-		"repeatedScalarField": s.RepeatedScalarField,
+	data["repeatedScalarField"] = s.RepeatedScalarField
 
-		"optionalScalarField": s.OptionalScalarField,
+	if s.OptionalScalarField != nil {
+		data["optionalScalarField"] = lo.FromPtr(s.OptionalScalarField)
+	}
 
-		"associatedThing": []map[string]string{},
+	data["associatedThing"] = []map[string]string{}
 
-		"optionalAssociatedThing": []map[string]string{},
+	if s.OptionalAssociatedThing != nil {
+		data["optionalAssociatedThing"] = []map[string]string{}
+	}
 
-		"repeatedMessages": []map[string]string{},
+	data["repeatedMessages"] = []map[string]string{}
 
-		"aTimestamp": s.ATimestamp,
+	data["aTimestamp"] = s.ATimestamp
 
-		"aStructField": s.AStructField,
+	data["aStructField"] = s.AStructField
 
-		"anEnum": s.AnEnum,
+	data["anEnum"] = s.AnEnum
+
+	if s.AnOptionalInt != nil {
+		data["anOptionalInt"] = lo.FromPtr(s.AnOptionalInt)
 	}
 
 	data = s.addCrossReferenceData(data)
@@ -396,10 +413,9 @@ func (s Thing2WeaviateModel) WeaviateClassSchemaProperties() []*models.Property 
 }
 
 func (s Thing2WeaviateModel) Data() map[string]interface{} {
-	data := map[string]interface{}{
+	data := map[string]interface{}{}
 
-		"name": s.Name,
-	}
+	data["name"] = s.Name
 
 	data = s.addCrossReferenceData(data)
 
