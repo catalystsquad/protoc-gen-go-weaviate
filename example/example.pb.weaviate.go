@@ -62,6 +62,9 @@ type ThingWeaviateModel struct {
 
 	// @gotags: fake:"skip"
 	AStructField string `json:"aStructField" fake:"skip"`
+
+	// @gotags: fake:"{number:1,7}"
+	AnEnum AnEnum `json:"anEnum" fake:"{number:1,7}"`
 }
 
 func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
@@ -116,6 +119,8 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 			return
 		}
 	}
+
+	theProto.AnEnum = s.AnEnum
 
 	return
 }
@@ -181,6 +186,8 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 		model.AStructField = string(AStructFieldBytes)
 	}
 
+	model.AnEnum = s.AnEnum
+
 	return
 }
 
@@ -241,6 +248,9 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 	}, {
 		Name:     "aStructField",
 		DataType: []string{"text"},
+	}, {
+		Name:     "anEnum",
+		DataType: []string{"int"},
 	},
 	}
 }
@@ -275,6 +285,8 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 		"aTimestamp": s.ATimestamp,
 
 		"aStructField": s.AStructField,
+
+		"anEnum": s.AnEnum,
 	}
 
 	data = s.addCrossReferenceData(data)

@@ -207,6 +207,7 @@ var thingFields = []graphql.Field{
 		},
 	},
 	{Name: "aStructField"},
+	{Name: "anEnum"},
 }
 
 func convertType(source, dest interface{}) error {

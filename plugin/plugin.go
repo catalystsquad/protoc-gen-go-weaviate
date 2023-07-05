@@ -153,6 +153,8 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "time"})
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
 		datatype = "*time.Time"
+	} else if isEnum(field) {
+		return field.GoName
 	} else if isStructPb(field) {
 		datatype = "string"
 	} else if isStructType(field) {
@@ -343,6 +345,10 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 
 func isTimestamp(field *protogen.Field) bool {
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
+}
+
+func isEnum(field *protogen.Field) bool {
+	return field.Enum != nil
 }
 
 func isStructPb(field *protogen.Field) bool {
