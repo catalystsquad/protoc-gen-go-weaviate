@@ -3,12 +3,12 @@ syntax = "proto3";
 package test;
 
 option go_package = "example.example";
-option (weaviate.file_opts) = {generate: true};
+option (weaviate.weaviate_file_opts) = {generate: true};
 import "options/weaviate.proto";
 import "google/protobuf/timestamp.proto";
 
 message Thing {
-  option (weaviate.opts) = {generate: true};
+  option (weaviate.weaviate_opts) = {generate: true};
   // @gotags: fake:"{uuid}"
   string id = 1;
   // @gotags: fake:"{price:0.00,1000.00}"
@@ -38,11 +38,11 @@ message Thing {
   // @gotags: fake:"skip"
   google.protobuf.Timestamp a_timestamp = 22;
   // @gotags: fake:"skip"
-  string an_ignored_field = 23 [(weaviate.field).ignore = true];
+  string an_ignored_field = 23 [(weaviate.weaviate_field).ignore = true];
 }
 
 message Thing2 {
-  option (weaviate.opts) = {generate: true};
+  option (weaviate.weaviate_opts) = {generate: true};
   // @gotags: fake:"{uuid}"
   string id = 1;
   // @gotags: fake:"{name}"

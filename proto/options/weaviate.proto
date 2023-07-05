@@ -8,7 +8,7 @@ import "google/protobuf/descriptor.proto";
 
 // Currently no file options
 extend google.protobuf.FileOptions {
-  WeaviateFileOptions file_opts = 52120;
+  WeaviateFileOptions weaviate_file_opts = 52120;
 }
 
 message WeaviateFileOptions {
@@ -18,7 +18,7 @@ message WeaviateFileOptions {
 // Validation rules applied at the message level
 extend google.protobuf.MessageOptions {
   // ormable will cause orm code to be generated for this message/object
-  WeaviateMessageOptions opts = 52120;
+  WeaviateMessageOptions weaviate_opts = 52120;
 }
 
 message WeaviateMessageOptions {
@@ -27,7 +27,7 @@ message WeaviateMessageOptions {
 
 // Field level specifications
 extend google.protobuf.FieldOptions {
-  WeaviateFieldOptions field = 52120;
+  WeaviateFieldOptions weaviate_field = 52120;
 }
 
 message WeaviateFieldOptions {
