@@ -8,7 +8,7 @@ import "options/weaviate.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
-enum AnEnum {
+enum AnEnumType {
   AN_ENUM_UNSPECIFIED = 0;
   AN_ENUM_ALPHA = 1;
   AN_ENUM_BRAVO = 2;
@@ -50,7 +50,7 @@ message Thing {
   // @gotags: fake:"skip"
   google.protobuf.Struct a_struct_field = 24;
   // @gotags: fake:"{number:1,2}"
-  AnEnum an_enum = 25;
+  AnEnumType an_enum = 25;
 }
 
 message Thing2 {

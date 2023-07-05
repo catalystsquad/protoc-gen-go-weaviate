@@ -154,7 +154,7 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
 		datatype = "*time.Time"
 	} else if isEnum(field) {
-		return field.GoName
+		return string(field.Desc.Enum().Name())
 	} else if isStructPb(field) {
 		datatype = "string"
 	} else if isStructType(field) {
