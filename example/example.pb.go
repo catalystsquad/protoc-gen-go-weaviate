@@ -109,8 +109,8 @@ type Thing struct {
 	AnIgnoredField string `protobuf:"bytes,23,opt,name=an_ignored_field,json=anIgnoredField,proto3" json:"an_ignored_field,omitempty" fake:"skip"`
 	// @gotags: fake:"skip"
 	AStructField *structpb.Struct `protobuf:"bytes,24,opt,name=a_struct_field,json=aStructField,proto3" json:"a_struct_field,omitempty" fake:"skip"`
-	// @gotags: fake:"{number:1,7}"
-	AnEnum AnEnum `protobuf:"varint,25,opt,name=an_enum,json=anEnum,proto3,enum=test.AnEnum" json:"an_enum,omitempty" fake:"{number:1,7}"`
+	// @gotags: fake:"{number:1,2}"
+	AnEnum AnEnum `protobuf:"varint,25,opt,name=an_enum,json=anEnum,proto3,enum=test.AnEnum" json:"an_enum,omitempty" fake:"{number:1,2}"`
 }
 
 func (x *Thing) Reset() {

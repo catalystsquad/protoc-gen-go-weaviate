@@ -49,7 +49,7 @@ message Thing {
   string an_ignored_field = 23 [(weaviate.weaviate_field).ignore = true];
   // @gotags: fake:"skip"
   google.protobuf.Struct a_struct_field = 24;
-  // @gotags: fake:"{number:1,7}"
+  // @gotags: fake:"{number:1,2}"
   AnEnum an_enum = 25;
 }
 
