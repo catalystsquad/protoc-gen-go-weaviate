@@ -64,7 +64,7 @@ type ThingWeaviateModel struct {
 	AStructField string `json:"aStructField" fake:"skip"`
 
 	// @gotags: fake:"{number:1,2}"
-	AnEnum AnEnum `json:"anEnum" fake:"{number:1,2}"`
+	AnEnum AnEnumType `json:"anEnum" fake:"{number:1,2}"`
 }
 
 func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
