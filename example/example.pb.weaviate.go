@@ -19,7 +19,7 @@ import (
 type ThingWeaviateModel struct {
 
 	// @gotags: fake:"{uuid}"
-	Id string `json:"id" fake:"{uuid}"`
+	Id *string `json:"id" fake:"{uuid}"`
 
 	// @gotags: fake:"{price:0.00,1000.00}"
 	ADouble float64 `json:"aDouble" fake:"{price:0.00,1000.00}"`
@@ -295,19 +295,23 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 }
 
 func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
-	if s.AssociatedThing.Id != "" {
-		AssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", s.AssociatedThing.Id)}
+
+	if lo.FromPtr(s.AssociatedThing.Id) != "" {
+		id := lo.FromPtr(s.AssociatedThing.Id)
+		AssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
 		data["associatedThing"] = append(data["associatedThing"].([]map[string]string), AssociatedThingReference)
 	}
 
 	if s.OptionalAssociatedThing != nil {
-		if s.OptionalAssociatedThing.Id != "" {
-			OptionalAssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", s.OptionalAssociatedThing.Id)}
+		if lo.FromPtr(s.OptionalAssociatedThing.Id) != "" {
+			id := lo.FromPtr(s.OptionalAssociatedThing.Id)
+			OptionalAssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
 			data["optionalAssociatedThing"] = append(data["optionalAssociatedThing"].([]map[string]string), OptionalAssociatedThingReference)
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
-		RepeatedMessagesReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", crossReference.Id)}
+		id := lo.FromPtr(crossReference.Id)
+		RepeatedMessagesReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
 		data["repeatedMessages"] = append(data["repeatedMessages"].([]map[string]string), RepeatedMessagesReference)
 	}
 	return data
@@ -317,7 +321,7 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(s.Data()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -325,7 +329,7 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithProperties(s.Data()).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
@@ -334,7 +338,7 @@ func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client,
 func (s ThingWeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -346,7 +350,7 @@ func (s ThingWeaviateModel) EnsureClass(client *weaviate.Client, continueOnError
 type Thing2WeaviateModel struct {
 
 	// @gotags: fake:"{uuid}"
-	Id string `json:"id" fake:"{uuid}"`
+	Id *string `json:"id" fake:"{uuid}"`
 
 	// @gotags: fake:"{name}"
 	Name string `json:"name" fake:"{name}"`
@@ -410,7 +414,7 @@ func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(s.Data()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -418,7 +422,7 @@ func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client
 func (s Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithProperties(s.Data()).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
@@ -427,7 +431,7 @@ func (s Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client
 func (s Thing2WeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
-		WithID(s.Id).
+		WithID(lo.FromPtr(s.Id)).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
