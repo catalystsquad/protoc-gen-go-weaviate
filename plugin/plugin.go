@@ -322,7 +322,7 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 		return &weaviate.WeaviateFieldOptions{}
 	}
 
-	v := proto.GetExtension(options, weaviate.E_Field)
+	v := proto.GetExtension(options, weaviate.E_WeaviateField)
 	if v == nil {
 		return nil
 	}
@@ -349,7 +349,7 @@ func getMessageOptions(message *protogen.Message) *weaviate.WeaviateMessageOptio
 		return &weaviate.WeaviateMessageOptions{}
 	}
 
-	v := proto.GetExtension(options, weaviate.E_Opts)
+	v := proto.GetExtension(options, weaviate.E_WeaviateOpts)
 	if v == nil {
 		return nil
 	}
@@ -371,7 +371,7 @@ func getFileOptions(file *protogen.File) *weaviate.WeaviateFileOptions {
 	if options == nil {
 		return &weaviate.WeaviateFileOptions{}
 	}
-	v := proto.GetExtension(options, weaviate.E_FileOpts)
+	v := proto.GetExtension(options, weaviate.E_WeaviateFileOpts)
 	if reflect.ValueOf(v).IsNil() {
 		return nil
 	}
