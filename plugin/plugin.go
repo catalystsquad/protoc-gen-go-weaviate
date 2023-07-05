@@ -55,6 +55,7 @@ var templateFuncs = map[string]any{
 	"isTimestamp":              isTimestamp,
 	"shouldGenerateMessage":    shouldGenerateMessage,
 	"shouldGenerateFile":       shouldGenerateFile,
+	"isStructPb":               isStructPb,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -152,6 +153,8 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "time"})
 		g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "google.golang.org/protobuf/types/known/timestamppb"})
 		datatype = "*time.Time"
+	} else if isStructPb(field) {
+		datatype = "string"
 	} else if isStructType(field) {
 		datatype = getStructFieldStructType(field)
 	} else {
@@ -167,7 +170,7 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 }
 
 func isStructType(field *protogen.Field) bool {
-	return !isTimestamp(field) && field.Message != nil
+	return field.Message != nil && !isTimestamp(field) && !isStructPb(field)
 }
 
 func getStructFieldStructType(field *protogen.Field) string {
@@ -235,6 +238,10 @@ func getPropertyName(field *protogen.Field) string {
 }
 
 func getPropertyDataType(field *protogen.Field) (datatype string) {
+	if isStructPb(field) {
+		datatype = "text"
+		return
+	}
 	if isStructType(field) {
 		datatype = getFieldClassName(field)
 		return
@@ -336,6 +343,11 @@ func getFieldOptions(field *protogen.Field) *weaviate.WeaviateFieldOptions {
 
 func isTimestamp(field *protogen.Field) bool {
 	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Timestamp"
+}
+
+func isStructPb(field *protogen.Field) bool {
+	g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "encoding/json"})
+	return field.Desc.Message() != nil && field.Desc.Message().FullName() == "google.protobuf.Struct"
 }
 
 func shouldGenerateMessage(message *protogen.Message) bool {
