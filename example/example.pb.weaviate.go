@@ -76,7 +76,10 @@ type ThingWeaviateModel struct {
 func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 	theProto = &Thing{}
 
-	theProto.Id = s.Id
+	if s.Id != nil {
+		theProto.Id = s.Id
+
+	}
 
 	theProto.ADouble = s.ADouble
 
@@ -94,14 +97,19 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 
 	theProto.RepeatedScalarField = s.RepeatedScalarField
 
-	theProto.OptionalScalarField = s.OptionalScalarField
+	if s.OptionalScalarField != nil {
+		theProto.OptionalScalarField = s.OptionalScalarField
+
+	}
 
 	if theProto.AssociatedThing, err = s.AssociatedThing.ToProto(); err != nil {
 		return
 	}
 
-	if theProto.OptionalAssociatedThing, err = s.OptionalAssociatedThing.ToProto(); err != nil {
-		return
+	if s.OptionalAssociatedThing != nil {
+		if theProto.OptionalAssociatedThing, err = s.OptionalAssociatedThing.ToProto(); err != nil {
+			return
+		}
 	}
 
 	for _, protoField := range s.RepeatedMessages {
@@ -126,7 +134,10 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 
 	theProto.AnEnum = s.AnEnum
 
-	theProto.AnOptionalInt = s.AnOptionalInt
+	if s.AnOptionalInt != nil {
+		theProto.AnOptionalInt = s.AnOptionalInt
+
+	}
 
 	if s.OptionalTimestamp != nil {
 		theProto.OptionalTimestamp = timestamppb.New(*s.OptionalTimestamp)
@@ -350,6 +361,24 @@ func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) m
 	return data
 }
 
+func (s ThingWeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
+}
+
+func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+	var exists bool
+	var err error
+	if exists, err = s.exists(ctx, client); err != nil {
+		return nil, err
+	}
+	if exists {
+		err = s.Update(ctx, client, consistencyLevel)
+		return nil, err
+	} else {
+		return s.Create(ctx, client, consistencyLevel)
+	}
+}
+
 func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
@@ -392,7 +421,10 @@ type Thing2WeaviateModel struct {
 func (s Thing2WeaviateModel) ToProto() (theProto *Thing2, err error) {
 	theProto = &Thing2{}
 
-	theProto.Id = s.Id
+	if s.Id != nil {
+		theProto.Id = s.Id
+
+	}
 
 	theProto.Name = s.Name
 
@@ -440,6 +472,24 @@ func (s Thing2WeaviateModel) Data() map[string]interface{} {
 
 func (s Thing2WeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
 	return data
+}
+
+func (s Thing2WeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
+}
+
+func (s Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+	var exists bool
+	var err error
+	if exists, err = s.exists(ctx, client); err != nil {
+		return nil, err
+	}
+	if exists {
+		err = s.Update(ctx, client, consistencyLevel)
+		return nil, err
+	} else {
+		return s.Create(ctx, client, consistencyLevel)
+	}
 }
 
 func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
