@@ -29,9 +29,13 @@ func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err er
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
+	{{- if fieldIsOptional . }}
 	if s.{{ .GoName }} != nil {
 		theProto.{{ .GoName }} = timestamppb.New(*s.{{ .GoName }})
 	}
+	{{- else }}
+	theProto.{{ .GoName }} = timestamppb.New(s.{{ .GoName }})
+	{{- end }}
 	{{- else if isStructPb . }}
 	if s.{{ .GoName }} != "" {
 		if err = json.Unmarshal([]byte(s.{{ .GoName }}), &theProto.{{ .GoName }}); err != nil {
@@ -68,7 +72,11 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, e
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
 	if s.{{ .GoName }} != nil {
+		{{- if fieldIsOptional . }}
 		model.{{ .GoName }} = lo.ToPtr(s.{{ .GoName }}.AsTime())
+		{{- else }}
+		model.{{ .GoName }} = s.{{ .GoName }}.AsTime()
+		{{- end }}
 	}
 	{{- else if isStructPb . }}
 	{{ structFieldName . }}Bytes, err := s.{{ structFieldName . }}.MarshalJSON()

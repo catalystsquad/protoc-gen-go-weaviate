@@ -58,7 +58,7 @@ type ThingWeaviateModel struct {
 	RepeatedMessages []Thing2WeaviateModel `json:"repeatedMessages" fake:"skip"`
 
 	// @gotags: fake:"skip"
-	ATimestamp *time.Time `json:"aTimestamp" fake:"skip"`
+	ATimestamp time.Time `json:"aTimestamp" fake:"skip"`
 
 	// @gotags: fake:"skip"
 	AStructField string `json:"aStructField" fake:"skip"`
@@ -68,6 +68,9 @@ type ThingWeaviateModel struct {
 
 	// @gotags: fake:"{number: 100,1000}"
 	AnOptionalInt *int32 `json:"anOptionalInt" fake:"{number: 100,1000}"`
+
+	// @gotags: fake:"skip"
+	OptionalTimestamp *time.Time `json:"optionalTimestamp" fake:"skip"`
 }
 
 func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
@@ -113,9 +116,7 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 		}
 	}
 
-	if s.ATimestamp != nil {
-		theProto.ATimestamp = timestamppb.New(*s.ATimestamp)
-	}
+	theProto.ATimestamp = timestamppb.New(s.ATimestamp)
 
 	if s.AStructField != "" {
 		if err = json.Unmarshal([]byte(s.AStructField), &theProto.AStructField); err != nil {
@@ -126,6 +127,10 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 	theProto.AnEnum = s.AnEnum
 
 	theProto.AnOptionalInt = s.AnOptionalInt
+
+	if s.OptionalTimestamp != nil {
+		theProto.OptionalTimestamp = timestamppb.New(*s.OptionalTimestamp)
+	}
 
 	return
 }
@@ -180,7 +185,7 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 	}
 
 	if s.ATimestamp != nil {
-		model.ATimestamp = lo.ToPtr(s.ATimestamp.AsTime())
+		model.ATimestamp = s.ATimestamp.AsTime()
 	}
 
 	AStructFieldBytes, err := s.AStructField.MarshalJSON()
@@ -194,6 +199,10 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 	model.AnEnum = s.AnEnum
 
 	model.AnOptionalInt = s.AnOptionalInt
+
+	if s.OptionalTimestamp != nil {
+		model.OptionalTimestamp = lo.ToPtr(s.OptionalTimestamp.AsTime())
+	}
 
 	return
 }
@@ -261,6 +270,9 @@ func (s ThingWeaviateModel) WeaviateClassSchemaProperties() []*models.Property {
 	}, {
 		Name:     "anOptionalInt",
 		DataType: []string{"int"},
+	}, {
+		Name:     "optionalTimestamp",
+		DataType: []string{"date"},
 	},
 	}
 }
@@ -304,6 +316,10 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 
 	if s.AnOptionalInt != nil {
 		data["anOptionalInt"] = lo.FromPtr(s.AnOptionalInt)
+	}
+
+	if s.OptionalTimestamp != nil {
+		data["optionalTimestamp"] = lo.FromPtr(s.OptionalTimestamp)
 	}
 
 	data = s.addCrossReferenceData(data)

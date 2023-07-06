@@ -53,6 +53,8 @@ message Thing {
   AnEnumType an_enum = 25;
   // @gotags: fake:"{number: 100,1000}"
   optional int32 an_optional_int = 26;
+  // @gotags: fake:"skip"
+  optional google.protobuf.Timestamp optional_timestamp = 27;
 }
 
 message Thing2 {

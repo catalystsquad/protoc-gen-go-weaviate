@@ -17,9 +17,11 @@ import (
 	"github.com/weaviate/weaviate/entities/models"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 const weaviateScheme = "http"
@@ -60,6 +62,8 @@ func (s *PluginSuite) TestPlugin() {
 	// populate protos
 	err = gofakeit.Struct(&thing)
 	require.NoError(s.T(), err)
+	thing.ATimestamp = timestamppb.New(time.Now())
+	thing.OptionalTimestamp = timestamppb.New(time.Now())
 	thing.AStructField = &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"name": {
@@ -104,6 +108,8 @@ func (s *PluginSuite) TestPlugin() {
 	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings()
+	responseBytes, err := json.Marshal(response)
+	fmt.Println(string(responseBytes))
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	resultThing := things[0]
 	resultThingProto, err := resultThing.ToProto()
@@ -209,6 +215,8 @@ var thingFields = []graphql.Field{
 	{Name: "aStructField"},
 	{Name: "anEnum"},
 	{Name: "anOptionalInt"},
+	{Name: "aTimestamp"},
+	{Name: "optionalTimestamp"},
 }
 
 func convertType(source, dest interface{}) error {
