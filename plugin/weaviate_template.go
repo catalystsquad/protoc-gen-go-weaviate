@@ -28,13 +28,14 @@ func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err er
     theProto = &{{ protoStructName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
-	{{- if isTimestamp . }}
 	{{- if fieldIsOptional . }}
 	if s.{{ .GoName }} != nil {
+	{{- end }}
+	{{- if isTimestamp . }}
+	{{- if fieldIsOptional . }}
 		theProto.{{ .GoName }} = timestamppb.New(*s.{{ .GoName }})
-	}
 	{{- else }}
-	theProto.{{ .GoName }} = timestamppb.New(s.{{ .GoName }})
+		theProto.{{ .GoName }} = timestamppb.New(s.{{ .GoName }})
 	{{- end }}
 	{{- else if isStructPb . }}
 	if s.{{ .GoName }} != "" {
@@ -61,6 +62,9 @@ func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err er
     {{- else }}
     theProto.{{ structFieldName . }} = s.{{ structFieldName . }}
     {{ end }}
+	{{- if fieldIsOptional . }}
+	}
+	{{- end }}
 	{{ end }}
 	{{ end }}
     return
@@ -204,6 +208,24 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
     {{- end -}}
 	{{- end }}
 	return data
+}
+
+func (s {{ structName . }}) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
+}
+
+func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+	var exists bool
+	var err error
+	if exists, err = s.exists(ctx, client); err != nil {
+		return nil, err
+	}
+	if exists {
+		err = s.Update(ctx, client, consistencyLevel)
+		return nil, err
+	} else {
+		return s.Create(ctx, client, consistencyLevel)
+	}
 }
 
 func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {

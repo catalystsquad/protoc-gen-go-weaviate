@@ -8,7 +8,9 @@ import (
 	"github.com/catalystsquad/app-utils-go/errorutils"
 	. "github.com/catalystsquad/protoc-gen-go-weaviate/example"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/orlangure/gnomock"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	client "github.com/weaviate/weaviate-go-client/v4/weaviate"
@@ -47,12 +49,12 @@ func TestPluginSuite(t *testing.T) {
 func (s *PluginSuite) SetupSuite() {
 	s.T().Parallel()
 	startWeaviate(s.T())
-}
-func (s *PluginSuite) TestPlugin() {
 	err := Thing2WeaviateModel{}.EnsureClass(weaviateClient, false)
 	require.NoError(s.T(), err)
 	err = ThingWeaviateModel{}.EnsureClass(weaviateClient, false)
 	require.NoError(s.T(), err)
+}
+func (s *PluginSuite) TestPlugin() {
 	// create protos
 	thing := &Thing{}
 	associatedThing1 := Thing2{}
@@ -60,7 +62,7 @@ func (s *PluginSuite) TestPlugin() {
 	associatedThing3 := Thing2{}
 	associatedThing4 := Thing2{}
 	// populate protos
-	err = gofakeit.Struct(&thing)
+	err := gofakeit.Struct(&thing)
 	require.NoError(s.T(), err)
 	thing.ATimestamp = timestamppb.New(time.Now())
 	thing.OptionalTimestamp = timestamppb.New(time.Now())
@@ -108,8 +110,6 @@ func (s *PluginSuite) TestPlugin() {
 	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings()
-	responseBytes, err := json.Marshal(response)
-	fmt.Println(string(responseBytes))
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	resultThing := things[0]
 	resultThingProto, err := resultThing.ToProto()
@@ -133,6 +133,60 @@ func (s *PluginSuite) TestPlugin() {
 	require.NoError(s.T(), err)
 	// ensure the update is correct
 	assertProtoEquality(s.T(), updatedThing, postUpdateResultThingProto.AssociatedThing)
+}
+
+func (s *PluginSuite) TestUpsert() {
+	// create protos
+	thing := &Thing{Id: lo.ToPtr(uuid.New().String())}
+	// populate protos
+	err := gofakeit.Struct(&thing)
+	require.NoError(s.T(), err)
+	thing.ATimestamp = timestamppb.New(time.Now())
+	thing.OptionalTimestamp = timestamppb.New(time.Now())
+	thing.AStructField = &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: gofakeit.Name(),
+				},
+			},
+		},
+	}
+	thing.ABytes = []byte(gofakeit.HackerPhrase())
+	// upsert thing
+	thingModel, err := thing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	require.NoError(s.T(), err)
+	// query for thing
+	response := s.queryForThings()
+	things, err := ThingWeaviateModelsFromGraphqlResult(response)
+	resultThing := things[0]
+	resultThingProto, err := resultThing.ToProto()
+	require.NoError(s.T(), err)
+	assertProtoEquality(s.T(), thing, resultThingProto, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
+	// update
+	thing.AString = gofakeit.HackerPhrase()
+	updatedModel, err := thing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = updatedModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	require.NoError(s.T(), err)
+	// query again
+	postUpdateResponse := s.queryForThings()
+	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
+	require.NoError(s.T(), err)
+	var postUpdateResultThing *Thing
+	for _, postUpdateThing := range postUpdateThings {
+		if lo.FromPtr(postUpdateThing.Id) == lo.FromPtr(thing.Id) {
+			postUpdateResultThing, err = postUpdateThing.ToProto()
+			require.NoError(s.T(), err)
+			break
+		}
+	}
+	require.NotNil(s.T(), postUpdateResultThing)
+	require.NoError(s.T(), err)
+	// ensure the update is correct
+	assertProtoEquality(s.T(), thing, postUpdateResultThing, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
 }
 
 func (s *PluginSuite) deleteClass(class string) {

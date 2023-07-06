@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/brianvoe/gofakeit/v6 v6.21.0
 	github.com/catalystsquad/app-utils-go v1.0.7
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.5.9
 	github.com/orlangure/gnomock v0.28.0
 	github.com/samber/lo v1.38.1
