@@ -49,9 +49,7 @@ func TestPluginSuite(t *testing.T) {
 func (s *PluginSuite) SetupSuite() {
 	s.T().Parallel()
 	startWeaviate(s.T())
-	err := Thing2WeaviateModel{}.EnsureClass(weaviateClient, false)
-	require.NoError(s.T(), err)
-	err = ThingWeaviateModel{}.EnsureClass(weaviateClient, false)
+	err := EnsureClasses(weaviateClient, true)
 	require.NoError(s.T(), err)
 }
 func (s *PluginSuite) TestPlugin() {

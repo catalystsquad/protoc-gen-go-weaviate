@@ -128,17 +128,31 @@ func (s {{ structName . }}) WeaviateClassName() string {
 	return "{{ className . }}"
 }
 
-func (s {{ structName . }}) WeaviateClassSchema() models.Class {
+func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
-		Properties: s.WeaviateClassSchemaProperties(),
+		Properties: s.AllWeaviateClassSchemaProperties(),
 	}
 }
 
-func (s {{ structName . }}) WeaviateClassSchemaProperties() []*models.Property {
+func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
+	return models.Class{
+		Class:      s.WeaviateClassName(),
+		Properties: s.WeaviateClassSchemaCrossReferenceProperties(),
+	}
+}
+
+func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
+	return models.Class{
+		Class:      s.WeaviateClassName(),
+		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
+	}
+}
+
+func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
 	return []*models.Property{
   		{{- range .Fields -}}
-		    {{ if ne (propertyName .) "id" -}}
+		    {{ if and (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) -}}
 			{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
@@ -146,6 +160,23 @@ func (s {{ structName . }}) WeaviateClassSchemaProperties() []*models.Property {
             {{- end -}}
     	{{ end }}
 	}
+}
+
+func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
+	return []*models.Property{
+  		{{- range .Fields -}}
+		    {{ if and (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
+			{
+			  Name:        "{{ jsonFieldName . }}",
+			  DataType:    []string{"{{ propertyDataType . }}"},
+			},
+            {{- end -}}
+    	{{ end }}
+	}
+}
+
+func (s {{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Property {
+	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
 func (s {{ structName . }}) Data() map[string]interface{} {
@@ -266,11 +297,44 @@ func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) EnsureClass(client *weaviate.Client, continueOnError bool) error {
-	return ensureClass(client, s.WeaviateClassSchema(), continueOnError)
+func (s {{ structName . }}) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
+	if err = s.EnsureClassWithoutCrossReferences(client, continueOnError); err != nil {
+		return
+	}
+	return s.EnsureClassWithCrossReferences(client, continueOnError)
+}
+
+func (s {{ structName . }}) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
+	return ensureClass(client, s.NonCrossReferenceWeaviateClassSchema(), continueOnError)
+}
+
+func (s {{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
+	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
 }
 {{ end }}
 {{ end }}
+
+func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
+	// create classes without cross references first so there are no errors about missing classes
+	{{- range .messages }}
+	{{- if shouldGenerateMessage . }}
+	err = {{ structName . }}{}.EnsureClassWithoutCrossReferences(client, continueOnError)
+	if err != nil {
+		return
+	}
+	{{- end }}
+	{{- end }}
+	// update classes including cross references
+	{{- range .messages }}
+	{{- if shouldGenerateMessage . }}
+	err = {{ structName . }}{}.EnsureClassWithCrossReferences(client, continueOnError)
+	if err != nil {
+		return
+	}
+	{{- end }}
+	{{- end }}
+	return
+}
 
 func ensureClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var exists bool
