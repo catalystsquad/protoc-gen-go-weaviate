@@ -592,20 +592,20 @@ func (s Thing2WeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Cli
 func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	// create classes without cross references first so there are no errors about missing classes
 	err = ThingWeaviateModel{}.EnsureClassWithoutCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	err = Thing2WeaviateModel{}.EnsureClassWithoutCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	// update classes including cross references
 	err = ThingWeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	err = Thing2WeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	return
@@ -614,7 +614,7 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 func ensureClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var exists bool
 	exists, err = classExists(client, class.Class)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	if exists {
@@ -627,7 +627,7 @@ func ensureClass(client *weaviate.Client, class models.Class, continueOnError bo
 func updateClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var fetchedClass *models.Class
 	fetchedClass, err = getClass(client, class.Class)
-	if err != nil || fetchedClass == nil {
+	if fetchedClass == nil || (!continueOnError && err != nil) {
 		return
 	}
 	for _, property := range class.Properties {
@@ -637,10 +637,8 @@ func updateClass(client *weaviate.Client, class models.Class, continueOnError bo
 			continue
 		}
 		err = createProperty(client, class.Class, property)
-		if err != nil {
-			if !continueOnError {
-				return
-			}
+		if !continueOnError && err != nil {
+			return
 		}
 	}
 	return
