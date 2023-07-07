@@ -90,26 +90,30 @@ func (s *PluginSuite) TestPlugin() {
 	for _, thing2 := range thing.RepeatedMessages {
 		model, err := thing2.ToWeaviateModel()
 		require.NoError(s.T(), err)
-		_, err = model.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+		_, err = model.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 		require.NoError(s.T(), err)
 	}
 	associatedThingModel, err := thing.AssociatedThing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = associatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = associatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	optionalAssociatedThingModel, err := thing.OptionalAssociatedThing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = optionalAssociatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = optionalAssociatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// create thing
 	thingModel, err := thing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = thingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = thingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings()
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
-	resultThing := things[0]
+	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	resultThing := thingsMap[*thing.Id]
+	require.NotNil(s.T(), resultThing)
 	resultThingProto, err := resultThing.ToProto()
 	require.NoError(s.T(), err)
 	assertProtoEquality(s.T(), thing, resultThingProto)
@@ -120,13 +124,16 @@ func (s *PluginSuite) TestPlugin() {
 	updatedThing.Name = name
 	updatedThingModel, err := updatedThing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	err = updatedThingModel.Update(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	err = updatedThingModel.Update(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query again
 	postUpdateResponse := s.queryForThings()
 	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
 	require.NoError(s.T(), err)
-	postUpdateResultThing := postUpdateThings[0]
+	postUpdateResultThingMap := lo.KeyBy(postUpdateThings, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	postUpdateResultThing := postUpdateResultThingMap[*thing.Id]
 	postUpdateResultThingProto, err := postUpdateResultThing.ToProto()
 	require.NoError(s.T(), err)
 	// ensure the update is correct
@@ -154,12 +161,15 @@ func (s *PluginSuite) TestUpsert() {
 	// upsert thing
 	thingModel, err := thing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings()
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
-	resultThing := things[0]
+	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	resultThing := thingsMap[*thing.Id]
 	resultThingProto, err := resultThing.ToProto()
 	require.NoError(s.T(), err)
 	assertProtoEquality(s.T(), thing, resultThingProto, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
@@ -167,7 +177,7 @@ func (s *PluginSuite) TestUpsert() {
 	thing.AString = gofakeit.HackerPhrase()
 	updatedModel, err := thing.ToWeaviateModel()
 	require.NoError(s.T(), err)
-	_, err = updatedModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ONE)
+	_, err = updatedModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query again
 	postUpdateResponse := s.queryForThings()

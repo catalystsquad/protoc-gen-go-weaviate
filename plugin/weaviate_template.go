@@ -319,7 +319,7 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	{{- range .messages }}
 	{{- if shouldGenerateMessage . }}
 	err = {{ structName . }}{}.EnsureClassWithoutCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	{{- end }}
@@ -328,7 +328,7 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	{{- range .messages }}
 	{{- if shouldGenerateMessage . }}
 	err = {{ structName . }}{}.EnsureClassWithCrossReferences(client, continueOnError)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	{{- end }}
@@ -339,7 +339,7 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 func ensureClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var exists bool
 	exists, err = classExists(client, class.Class)
-	if err != nil {
+	if !continueOnError && err != nil {
 		return
 	}
 	if exists {
@@ -352,7 +352,7 @@ func ensureClass(client *weaviate.Client, class models.Class, continueOnError bo
 func updateClass(client *weaviate.Client, class models.Class, continueOnError bool) (err error) {
 	var fetchedClass *models.Class
 	fetchedClass, err = getClass(client, class.Class)
-	if err != nil || fetchedClass == nil {
+	if fetchedClass == nil || (!continueOnError && err != nil) {
 		return
 	}
 	for _, property := range class.Properties {
@@ -362,10 +362,8 @@ func updateClass(client *weaviate.Client, class models.Class, continueOnError bo
 			continue
 		}
 		err = createProperty(client, class.Class, property)
-		if err != nil {
-			if !continueOnError {
+		if !continueOnError && err != nil {
 				return
-			}
 		}
 	}
 	return
