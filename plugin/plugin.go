@@ -58,6 +58,7 @@ var templateFuncs = map[string]any{
 	"isStructPb":                      isStructPb,
 	"idFieldIsOptional":               idFieldIsOptional,
 	"crossReferenceIdFieldIsOptional": crossReferenceIdFieldIsOptional,
+	"vectorizer":                      vectorizer,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -241,6 +242,15 @@ func crossReferenceIdFieldIsOptional(field *protogen.Field) bool {
 		}
 	}
 	return false
+}
+
+func vectorizer(m *protogen.Message) string {
+	opts := getMessageOptions(m)
+	if opts.Vectorizer != "" {
+		return opts.Vectorizer
+	}
+	// default to no vectorizer
+	return "none"
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {
