@@ -23,6 +23,7 @@ extend google.protobuf.MessageOptions {
 
 message WeaviateMessageOptions {
   bool generate = 1;
+  string vectorizer = 2;
 }
 
 // Field level specifications

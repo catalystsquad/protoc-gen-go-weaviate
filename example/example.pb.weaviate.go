@@ -239,6 +239,7 @@ func (s ThingWeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 func (s ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
+		Vectorizer: "none",
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
 }
@@ -496,6 +497,7 @@ func (s Thing2WeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 func (s Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
+		Vectorizer: "none",
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
 }
