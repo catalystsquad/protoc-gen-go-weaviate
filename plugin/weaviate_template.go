@@ -260,12 +260,12 @@ func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client,
 	}
 }
 
-func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	{{- range .Fields }}
 	  {{- if fieldIsCrossReference . -}}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
-			_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
             if err != nil {
               return nil, err
             }
@@ -273,13 +273,13 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
         {{- else }}
         {{- if fieldIsOptional . }}
         if s.{{ structFieldName . }} != nil {
-		  _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return nil, err
 		  }
         }
         {{- else }}
-          _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+          _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return nil, err
 		  }
@@ -299,28 +299,28 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	{{- range .Fields }}
 	  {{- if fieldIsCrossReference . -}}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
-			_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
             if err != nil {
-              return err
+              return
             }
 	      }
         {{- else }}
         {{- if fieldIsOptional . }}
         if s.{{ structFieldName . }} != nil {
-		  _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
-		    return err
+		    return
 		  }
         }
         {{- else }}
-          _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+          _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
-		    return err
+		    return
 		  }
         {{- end }}
 		{{- end }}
