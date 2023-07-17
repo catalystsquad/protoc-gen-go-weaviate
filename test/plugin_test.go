@@ -86,16 +86,6 @@ func (s *PluginSuite) TestPlugin() {
 	thing.AssociatedThing = &associatedThing1
 	thing.OptionalAssociatedThing = &associatedThing2
 	thing.RepeatedMessages = []*Thing2{&associatedThing3, &associatedThing4}
-	// create associated things
-	for _, thing2 := range thing.RepeatedMessages {
-		model, err := thing2.ToWeaviateModel()
-		require.NoError(s.T(), err)
-		_, err = model.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
-		require.NoError(s.T(), err)
-	}
-	associatedThingModel, err := thing.AssociatedThing.ToWeaviateModel()
-	require.NoError(s.T(), err)
-	_, err = associatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	optionalAssociatedThingModel, err := thing.OptionalAssociatedThing.ToWeaviateModel()
 	require.NoError(s.T(), err)
@@ -143,9 +133,13 @@ func (s *PluginSuite) TestPlugin() {
 func (s *PluginSuite) TestUpsert() {
 	// create protos
 	thing := &Thing{Id: lo.ToPtr(uuid.New().String())}
+	associatedThing := &Thing2{Id: lo.ToPtr(uuid.New().String())}
 	// populate protos
 	err := gofakeit.Struct(&thing)
 	require.NoError(s.T(), err)
+	err = gofakeit.Struct(&associatedThing)
+	require.NoError(s.T(), err)
+	thing.AssociatedThing = associatedThing
 	thing.ATimestamp = timestamppb.New(time.Now())
 	thing.OptionalTimestamp = timestamppb.New(time.Now())
 	thing.AStructField = &structpb.Struct{

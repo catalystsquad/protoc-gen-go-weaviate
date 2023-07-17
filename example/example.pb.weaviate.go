@@ -404,6 +404,22 @@ func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client,
 }
 
 func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+	_, err := s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+	if err != nil {
+		return nil, err
+	}
+	if s.OptionalAssociatedThing != nil {
+		_, err := s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, crossReference := range s.RepeatedMessages {
+		_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(s.Data()).
@@ -413,6 +429,22 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 }
 
 func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+	_, err := s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+	if err != nil {
+		return err
+	}
+	if s.OptionalAssociatedThing != nil {
+		_, err := s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return err
+		}
+	}
+	for _, crossReference := range s.RepeatedMessages {
+		_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return err
+		}
+	}
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).

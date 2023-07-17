@@ -261,6 +261,32 @@ func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client,
 }
 
 func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
+	{{- range .Fields }}
+	  {{- if fieldIsCrossReference . -}}
+        {{- if fieldIsRepeated . }}
+          for _, crossReference := range s.{{ structFieldName . }} {
+			_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+            if err != nil {
+              return nil, err
+            }
+	      }
+        {{- else }}
+        {{- if fieldIsOptional . }}
+        if s.{{ structFieldName . }} != nil {
+		  _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  if err != nil {
+		    return nil, err
+		  }
+        }
+        {{- else }}
+          _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  if err != nil {
+		    return nil, err
+		  }
+        {{- end }}
+		{{- end }}
+	  {{- end }}
+    {{- end }}
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(s.Data()).
@@ -274,6 +300,32 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 }
 
 func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+	{{- range .Fields }}
+	  {{- if fieldIsCrossReference . -}}
+        {{- if fieldIsRepeated . }}
+          for _, crossReference := range s.{{ structFieldName . }} {
+			_, err := crossReference.Upsert(ctx, client, consistencyLevel)
+            if err != nil {
+              return err
+            }
+	      }
+        {{- else }}
+        {{- if fieldIsOptional . }}
+        if s.{{ structFieldName . }} != nil {
+		  _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  if err != nil {
+		    return err
+		  }
+        }
+        {{- else }}
+          _, err := s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  if err != nil {
+		    return err
+		  }
+        {{- end }}
+		{{- end }}
+	  {{- end }}
+    {{- end }}
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
