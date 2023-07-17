@@ -406,18 +406,18 @@ func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client,
 func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
 	if err != nil {
-		return nil, err
+		return
 	}
 	if s.OptionalAssociatedThing != nil {
 		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
 		_, err = crossReference.Upsert(ctx, client, consistencyLevel)
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 	return client.Data().Creator().

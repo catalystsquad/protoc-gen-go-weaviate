@@ -267,7 +267,7 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
           for _, crossReference := range s.{{ structFieldName . }} {
 			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
             if err != nil {
-              return nil, err
+              return
             }
 	      }
         {{- else }}
@@ -275,13 +275,13 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
         if s.{{ structFieldName . }} != nil {
 		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
-		    return nil, err
+		    return
 		  }
         }
         {{- else }}
           _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
-		    return nil, err
+		    return
 		  }
         {{- end }}
 		{{- end }}
