@@ -208,34 +208,32 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
     {{- if fieldIsCrossReference . -}}
     {{- if fieldIsRepeated . }}
 	for _, crossReference := range s.{{ structFieldName . }} {
-      {{- if crossReferenceIdFieldIsOptional . }}
-      id := lo.FromPtr(crossReference.Id)
-	  {{- else }}
-      id := crossReference.Id
-      {{ end }}
-      {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-	  data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      if crossReference != nil {
+        {{- if crossReferenceIdFieldIsOptional . }}
+        id := lo.FromPtr(crossReference.Id)
+	    {{- else }}
+        id := crossReference.Id
+        {{ end }}
+        {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+	    data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      }
 	}
     {{- else }}
-	{{ if fieldIsOptional . -}}
 	if s.{{ structFieldName . }} != nil {
-    {{- end -}}
-	{{- if crossReferenceIdFieldIsOptional . }}
-	if lo.FromPtr(s.{{ structFieldName . }}.Id) != "" {
-	{{- else }}
-	if s.{{ structFieldName . }}.Id != "" {
-	{{- end }}
-	{{- if crossReferenceIdFieldIsOptional . }}
-    id := lo.FromPtr(s.{{ structFieldName . }}.Id)
-    {{- else }}
-    id := s.{{ structFieldName . }}.Id
-    {{ end }}
-	{{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-    data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
-    }
-	{{ if fieldIsOptional . -}}
+	  {{- if crossReferenceIdFieldIsOptional . }}
+	  if lo.FromPtr(s.{{ structFieldName . }}.Id) != "" {
+	  {{- else }}
+	  if s.{{ structFieldName . }}.Id != "" {
+	  {{- end }}
+	  {{- if crossReferenceIdFieldIsOptional . }}
+      id := lo.FromPtr(s.{{ structFieldName . }}.Id)
+      {{- else }}
+      id := s.{{ structFieldName . }}.Id
+      {{ end }}
+	  {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+      data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      }
 	}
-    {{- end -}}
     {{- end -}}
     {{- end -}}
 	{{- end }}

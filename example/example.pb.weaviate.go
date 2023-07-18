@@ -363,13 +363,13 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 }
 
 func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
-
-	if lo.FromPtr(s.AssociatedThing.Id) != "" {
-		id := lo.FromPtr(s.AssociatedThing.Id)
-		AssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-		data["associatedThing"] = append(data["associatedThing"].([]map[string]string), AssociatedThingReference)
+	if s.AssociatedThing != nil {
+		if lo.FromPtr(s.AssociatedThing.Id) != "" {
+			id := lo.FromPtr(s.AssociatedThing.Id)
+			AssociatedThingReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+			data["associatedThing"] = append(data["associatedThing"].([]map[string]string), AssociatedThingReference)
+		}
 	}
-
 	if s.OptionalAssociatedThing != nil {
 		if lo.FromPtr(s.OptionalAssociatedThing.Id) != "" {
 			id := lo.FromPtr(s.OptionalAssociatedThing.Id)
@@ -378,9 +378,11 @@ func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) m
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
-		id := lo.FromPtr(crossReference.Id)
-		RepeatedMessagesReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-		data["repeatedMessages"] = append(data["repeatedMessages"].([]map[string]string), RepeatedMessagesReference)
+		if crossReference != nil {
+			id := lo.FromPtr(crossReference.Id)
+			RepeatedMessagesReference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+			data["repeatedMessages"] = append(data["repeatedMessages"].([]map[string]string), RepeatedMessagesReference)
+		}
 	}
 	return data
 }
