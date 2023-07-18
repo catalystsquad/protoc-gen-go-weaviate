@@ -49,13 +49,13 @@ type ThingWeaviateModel struct {
 	OptionalScalarField *string `json:"optionalScalarField" fake:"skip"`
 
 	// @gotags: fake:"skip"
-	AssociatedThing Thing2WeaviateModel `json:"associatedThing" fake:"skip"`
+	AssociatedThing *Thing2WeaviateModel `json:"associatedThing" fake:"skip"`
 
 	// @gotags: fake:"skip"
 	OptionalAssociatedThing *Thing2WeaviateModel `json:"optionalAssociatedThing" fake:"skip"`
 
 	// @gotags: fake:"skip"
-	RepeatedMessages []Thing2WeaviateModel `json:"repeatedMessages" fake:"skip"`
+	RepeatedMessages []*Thing2WeaviateModel `json:"repeatedMessages" fake:"skip"`
 
 	// @gotags: fake:"skip"
 	ATimestamp time.Time `json:"aTimestamp" fake:"skip"`
@@ -146,8 +146,8 @@ func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 	return
 }
 
-func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
-	model = ThingWeaviateModel{}
+func (s *Thing) ToWeaviateModel() (model *ThingWeaviateModel, err error) {
+	model = &ThingWeaviateModel{}
 
 	model.Id = s.Id
 
@@ -180,7 +180,7 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 		if err != nil {
 			return model, err
 		}
-		model.OptionalAssociatedThing = lo.ToPtr(modelOptionalAssociatedThing)
+		model.OptionalAssociatedThing = modelOptionalAssociatedThing
 	}
 
 	for _, protoField := range s.RepeatedMessages {
@@ -189,7 +189,7 @@ func (s *Thing) ToWeaviateModel() (model ThingWeaviateModel, err error) {
 			return model, err
 		}
 		if model.RepeatedMessages == nil {
-			model.RepeatedMessages = []Thing2WeaviateModel{msg}
+			model.RepeatedMessages = []*Thing2WeaviateModel{msg}
 		} else {
 			model.RepeatedMessages = append(model.RepeatedMessages, msg)
 		}
@@ -404,9 +404,11 @@ func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client,
 }
 
 func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
-	_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
-	if err != nil {
-		return
+	if s.AssociatedThing != nil {
+		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return
+		}
 	}
 	if s.OptionalAssociatedThing != nil {
 		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
@@ -415,9 +417,11 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
-		_, err = crossReference.Upsert(ctx, client, consistencyLevel)
-		if err != nil {
-			return
+		if crossReference != nil {
+			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
+			if err != nil {
+				return
+			}
 		}
 	}
 	return client.Data().Creator().
@@ -498,8 +502,8 @@ func (s Thing2WeaviateModel) ToProto() (theProto *Thing2, err error) {
 	return
 }
 
-func (s *Thing2) ToWeaviateModel() (model Thing2WeaviateModel, err error) {
-	model = Thing2WeaviateModel{}
+func (s *Thing2) ToWeaviateModel() (model *Thing2WeaviateModel, err error) {
+	model = &Thing2WeaviateModel{}
 
 	model.Id = s.Id
 

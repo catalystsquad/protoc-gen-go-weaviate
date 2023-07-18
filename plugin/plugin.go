@@ -165,12 +165,13 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 	} else {
 		datatype = getStructFieldNonStructType(field)
 	}
-	if fieldIsRepeated(field) {
-		datatype = fmt.Sprintf("[]%s", datatype)
-	}
 	if isPointer(field) {
 		datatype = fmt.Sprintf("*%s", datatype)
 	}
+	if fieldIsRepeated(field) {
+		datatype = fmt.Sprintf("[]%s", datatype)
+	}
+
 	return
 }
 
@@ -191,7 +192,7 @@ func fieldIsRepeated(field *protogen.Field) bool {
 }
 
 func isPointer(field *protogen.Field) bool {
-	return field.Desc.HasOptionalKeyword()
+	return isStructType(field) || field.Desc.HasOptionalKeyword()
 }
 
 func getClassName(message *protogen.Message) string {
