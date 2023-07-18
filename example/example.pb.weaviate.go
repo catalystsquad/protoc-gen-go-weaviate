@@ -435,9 +435,11 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 }
 
 func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
-	_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
-	if err != nil {
-		return
+	if s.AssociatedThing != nil {
+		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		if err != nil {
+			return
+		}
 	}
 	if s.OptionalAssociatedThing != nil {
 		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
@@ -446,9 +448,11 @@ func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client,
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
-		_, err = crossReference.Upsert(ctx, client, consistencyLevel)
-		if err != nil {
-			return
+		if crossReference != nil {
+			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
+			if err != nil {
+				return
+			}
 		}
 	}
 	return client.Data().Updater().
