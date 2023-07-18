@@ -308,21 +308,21 @@ func ThingWeaviateModelsFromGraphqlResult(response *models.GraphQLResponse) (mod
 		if err = convertType(obj, &model); err != nil {
 			return
 		}
-		var associatedThing []Thing2WeaviateModel
+		var associatedThing []*Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "associatedThing", &associatedThing); err != nil {
 			return
 		}
 		if len(associatedThing) > 0 {
 			model.AssociatedThing = associatedThing[0]
 		}
-		var optionalAssociatedThing []Thing2WeaviateModel
+		var optionalAssociatedThing []*Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "optionalAssociatedThing", &optionalAssociatedThing); err != nil {
 			return
 		}
 		if len(optionalAssociatedThing) > 0 {
-			model.OptionalAssociatedThing = &optionalAssociatedThing[0]
+			model.OptionalAssociatedThing = optionalAssociatedThing[0]
 		}
-		var associatedThings []Thing2WeaviateModel
+		var associatedThings []*Thing2WeaviateModel
 		if err = getCrossReference(associationsMap, "repeatedMessages", &associatedThings); err != nil {
 			return
 		}

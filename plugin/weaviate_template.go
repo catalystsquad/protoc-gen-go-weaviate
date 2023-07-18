@@ -70,8 +70,8 @@ func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err er
     return
 }
 
-func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, err error) {
-    model = {{ structName . }}{}
+func (s *{{ protoStructName . }}) ToWeaviateModel() (model *{{ structName . }}, err error) {
+    model = &{{ structName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
@@ -114,7 +114,7 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, e
 		if err != nil {
 			return model, err
 		}
-		model.{{ structFieldName . }} = lo.ToPtr(model{{ structFieldName . }})
+		model.{{ structFieldName . }} = model{{ structFieldName . }}
 	}
     {{- else }}
     model.{{ structFieldName . }} = s.{{ structFieldName . }}
@@ -265,25 +265,20 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 	  {{- if fieldIsCrossReference . -}}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
-			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
-            if err != nil {
-              return
-            }
+			if crossReference != nil {
+			  _, err = crossReference.Upsert(ctx, client, consistencyLevel)
+              if err != nil {
+                return
+              }
+			}
 	      }
         {{- else }}
-        {{- if fieldIsOptional . }}
         if s.{{ structFieldName . }} != nil {
 		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return
 		  }
         }
-        {{- else }}
-          _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
-		  if err != nil {
-		    return
-		  }
-        {{- end }}
 		{{- end }}
 	  {{- end }}
     {{- end }}
