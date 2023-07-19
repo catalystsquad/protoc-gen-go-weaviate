@@ -118,6 +118,8 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/tidwall/gjson"})
 			if _, err = g.Write(data.Bytes()); err != nil {
 				return
 			}
