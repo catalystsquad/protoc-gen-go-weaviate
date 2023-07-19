@@ -237,8 +237,7 @@ func (s ThingWeaviateModel) FullWeaviateClassSchema() models.Class {
 
 func (s ThingWeaviateModel) WeaviateVectorClassSchema() models.Class {
 	return models.Class{
-		Class:      s.WeaviateVectorClassName(),
-		Vectorizer: "none",
+		Class: s.WeaviateVectorClassName(),
 		Properties: []*models.Property{
 			{
 				Name:     "values",
@@ -606,8 +605,7 @@ func (s Thing2WeaviateModel) FullWeaviateClassSchema() models.Class {
 
 func (s Thing2WeaviateModel) WeaviateVectorClassSchema() models.Class {
 	return models.Class{
-		Class:      s.WeaviateVectorClassName(),
-		Vectorizer: "none",
+		Class: s.WeaviateVectorClassName(),
 		Properties: []*models.Property{
 			{
 				Name:     "values",
@@ -779,27 +777,16 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	if !continueOnError && err != nil {
 		return
 	}
-	// update classes including cross references
-	err = ThingWeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
-	if !continueOnError && err != nil {
-		return
-	}
-	// vector classes
-	err = ThingWeaviateModel{}.EnsureVectorSearchClass(client, continueOnError)
-	if !continueOnError && err != nil {
-		return
-	}
 	err = Thing2WeaviateModel{}.EnsureClassWithoutCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
 	// update classes including cross references
-	err = Thing2WeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
+	err = ThingWeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
-	// vector classes
-	err = Thing2WeaviateModel{}.EnsureVectorSearchClass(client, continueOnError)
+	err = Thing2WeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
