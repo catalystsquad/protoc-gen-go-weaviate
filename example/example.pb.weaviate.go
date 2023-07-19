@@ -2,9 +2,7 @@ package example_example
 
 import (
 	json "encoding/json"
-	"github.com/tidwall/gjson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	"strings"
 	time "time"
 )
 
