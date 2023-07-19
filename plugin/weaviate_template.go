@@ -432,12 +432,13 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	if !continueOnError && err != nil {
 		return
 	}
-	{{- end }}
-	{{- end }}
 	// update classes including cross references
-	{{- range .messages }}
-	{{- if shouldGenerateMessage . }}
 	err = {{ structName . }}{}.EnsureClassWithCrossReferences(client, continueOnError)
+	if !continueOnError && err != nil {
+		return
+	}
+	// vector classes
+	err = {{ structName . }}{}.EnsureVectorSearchClass(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
