@@ -142,6 +142,7 @@ func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
 func (s {{ structName . }}) WeaviateVectorClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateVectorClassName(),
+		Vectorizer: "{{ vectorizer . }}",
 		Properties: []*models.Property{
 			{
 				Name: "values",
