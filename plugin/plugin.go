@@ -258,19 +258,23 @@ func vectorizer(m *protogen.Message) string {
 	return "none"
 }
 
-func tokenization(f *protogen.Field) string {
+func tokenization(f *protogen.Field) (tokenization string) {
 	options := getFieldOptions(f)
-	return options.Tokenization
+	if options != nil {
+		tokenization = options.Tokenization
+	}
+	return
 }
 
-func moduleConfig(f *protogen.Field) string {
+func moduleConfig(f *protogen.Field) (moduleConfig string) {
 	options := getFieldOptions(f)
-	if options.ModuleConfig != "" {
-		if err := json.Unmarshal([]byte(options.ModuleConfig), &map[string]interface{}{}); err != nil {
+	if options != nil && options.ModuleConfig != "" {
+		moduleConfig = options.ModuleConfig
+		if err := json.Unmarshal([]byte(moduleConfig), &map[string]interface{}{}); err != nil {
 			panic(errorx.IllegalArgument.New("moduleConfig field option is not valid json"))
 		}
 	}
-	return options.ModuleConfig
+	return
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {

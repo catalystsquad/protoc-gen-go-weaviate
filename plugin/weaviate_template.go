@@ -157,7 +157,7 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
 			{{ structFieldName . }}Property := &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
-              {{- if tokenization . }}
+              {{- if and (eq (propertyDataType .) "text") (tokenization .) }}
               Tokenization: "{{ tokenization . }}",
               {{- end }}
 			}

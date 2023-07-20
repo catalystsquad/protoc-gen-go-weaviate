@@ -329,8 +329,9 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, ABoolTextProperty)
 	AStringProperty := &models.Property{
-		Name:     "aString",
-		DataType: []string{"text"},
+		Name:         "aString",
+		DataType:     []string{"text"},
+		Tokenization: "word",
 	}
 
 	properties = append(properties, AStringProperty)

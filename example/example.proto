@@ -30,7 +30,7 @@ message Thing {
   // @gotags: fake:"{bool}"
   bool a_bool = 14;
   // @gotags: fake:"{hackerphrase}"
-  string a_string = 15;
+  string a_string = 15 [(weaviate.weaviate_field).tokenization = 'word'];
   // @gotags: fake:"skip"
   bytes a_bytes = 16;
   // @gotags: fake:"{hackerphrase}"
