@@ -183,9 +183,9 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
             if {{ structFieldName . }}TextErr != nil {
               panic({{ structFieldName . }}TextErr)
             }
-            {{ structFieldName . }}TextProperty.ModuleConfig = {{ structFieldName . }}TextModuleConfig
+            {{ structFieldName . }}WTextProperty.ModuleConfig = {{ structFieldName . }}TextModuleConfig
             {{ end }}
-            properties = append(properties, {{ structFieldName . }}TextProperty)
+            properties = append(properties, {{ structFieldName . }}WTextProperty)
 			{{- end -}}
             {{- end -}}
     	{{ end }}
