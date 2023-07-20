@@ -172,7 +172,7 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
             {{ end }}
             properties = append(properties, {{ structFieldName . }}Property)
 			{{ if and  (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") }}
-			{{ structFieldName . }}TextProperty := &models.Property{
+			{{ structFieldName . }}WTextProperty := &models.Property{
 			  Name:        "{{ jsonFieldName . }}Text",
 			  DataType:    []string{"text"},
 			}
