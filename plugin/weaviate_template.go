@@ -151,22 +151,45 @@ func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class 
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
-	return []*models.Property{
-  		{{- range .Fields -}}
-		    {{ if and (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) -}}
-			{
+	properties := []*models.Property{}
+  		{{ range .Fields -}}
+		    {{ if and (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) }}
+			{{ structFieldName . }}Property := &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
-			},
+              {{- if tokenization . }}
+              Tokenization: "{{ tokenization . }}",
+              {{- end }}
+			}
+            {{ if moduleConfig . }}
+            var {{ structFieldName . }}ModuleConfig map[string]interface{}
+            {{ structFieldName . }}ModuleConfigBytes := []byte(` + "`" + `{{ moduleConfig . }}` + "`" + `)
+            {{ structFieldName . }}Err := json.Unmarshal({{ structFieldName . }}ModuleConfigBytes, &{{ structFieldName . }}ModuleConfig)
+            if {{ structFieldName . }}Err != nil {
+              panic({{ structFieldName . }}Err)
+            }
+            {{ structFieldName . }}Property.ModuleConfig = {{ structFieldName . }}ModuleConfig
+            {{ end }}
+            properties = append(properties, {{ structFieldName . }}Property)
 			{{ if and  (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") }}
-			{
+			{{ structFieldName . }}TextProperty := &models.Property{
 			  Name:        "{{ jsonFieldName . }}Text",
 			  DataType:    []string{"text"},
-			},
+			}
+			{{ if moduleConfig . }}
+            var {{ structFieldName . }}TextModuleConfig map[string]interface{}
+            {{ structFieldName . }}TextModuleConfigBytes := []byte(` + "`" + `{{ moduleConfig . }}` + "`" + `)
+            {{ structFieldName . }}TextErr := json.Unmarshal({{ structFieldName . }}TextModuleConfigBytes, &{{ structFieldName . }}TextModuleConfig)
+            if {{ structFieldName . }}TextErr != nil {
+              panic({{ structFieldName . }}TextErr)
+            }
+            {{ structFieldName . }}TextProperty.ModuleConfig = {{ structFieldName . }}TextModuleConfig
+            {{ end }}
+            properties = append(properties, {{ structFieldName . }}TextProperty)
 			{{- end -}}
             {{- end -}}
     	{{ end }}
-	}
+	return properties
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {

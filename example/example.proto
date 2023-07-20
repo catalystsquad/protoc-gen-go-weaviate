@@ -24,7 +24,7 @@ message Thing {
   // @gotags: fake:"{price:0.00,1000.00}"
   float a_float = 3;
   // @gotags: fake:"{int32}"
-  int32 an_int32 = 4;
+  int32 an_int32 = 4 [(weaviate.weaviate_field).moduleConfig = '{"text2vec-contextionary": {"vectorizePropertyName": true}}'];
   // @gotags: fake:"{int64}"
   int64 an_int64 = 5;
   // @gotags: fake:"{bool}"

@@ -245,108 +245,190 @@ func (s ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class 
 }
 
 func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
-	return []*models.Property{{
+	properties := []*models.Property{}
+
+	ADoubleProperty := &models.Property{
 		Name:     "aDouble",
 		DataType: []string{"number"},
-	},
-
-		{
-			Name:     "aDoubleText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "aFloat",
-			DataType: []string{"number"},
-		},
-
-		{
-			Name:     "aFloatText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "anInt32",
-			DataType: []string{"int"},
-		},
-
-		{
-			Name:     "anInt32Text",
-			DataType: []string{"text"},
-		}, {
-			Name:     "anInt64",
-			DataType: []string{"string"},
-		},
-
-		{
-			Name:     "anInt64Text",
-			DataType: []string{"text"},
-		}, {
-			Name:     "aBool",
-			DataType: []string{"boolean"},
-		},
-
-		{
-			Name:     "aBoolText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "aString",
-			DataType: []string{"text"},
-		},
-		{
-			Name:     "aBytes",
-			DataType: []string{"blob"},
-		},
-		{
-			Name:     "repeatedScalarField",
-			DataType: []string{"text[]"},
-		},
-
-		{
-			Name:     "repeatedScalarFieldText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "optionalScalarField",
-			DataType: []string{"text"},
-		},
-		{
-			Name:     "aTimestamp",
-			DataType: []string{"date"},
-		},
-
-		{
-			Name:     "aTimestampText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "anIgnoredField",
-			DataType: []string{"text"},
-		},
-		{
-			Name:     "aStructField",
-			DataType: []string{"text"},
-		},
-		{
-			Name:     "anEnum",
-			DataType: []string{"int"},
-		},
-
-		{
-			Name:     "anEnumText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "anOptionalInt",
-			DataType: []string{"int"},
-		},
-
-		{
-			Name:     "anOptionalIntText",
-			DataType: []string{"text"},
-		}, {
-			Name:     "optionalTimestamp",
-			DataType: []string{"date"},
-		},
-
-		{
-			Name:     "optionalTimestampText",
-			DataType: []string{"text"},
-		},
 	}
+
+	properties = append(properties, ADoubleProperty)
+
+	ADoubleTextProperty := &models.Property{
+		Name:     "aDoubleText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, ADoubleTextProperty)
+	AFloatProperty := &models.Property{
+		Name:     "aFloat",
+		DataType: []string{"number"},
+	}
+
+	properties = append(properties, AFloatProperty)
+
+	AFloatTextProperty := &models.Property{
+		Name:     "aFloatText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AFloatTextProperty)
+	AnInt32Property := &models.Property{
+		Name:     "anInt32",
+		DataType: []string{"int"},
+	}
+
+	var AnInt32ModuleConfig map[string]interface{}
+	AnInt32ModuleConfigBytes := []byte(`{"text2vec-contextionary": {"vectorizePropertyName": true}}`)
+	AnInt32Err := json.Unmarshal(AnInt32ModuleConfigBytes, &AnInt32ModuleConfig)
+	if AnInt32Err != nil {
+		panic(AnInt32Err)
+	}
+	AnInt32Property.ModuleConfig = AnInt32ModuleConfig
+
+	properties = append(properties, AnInt32Property)
+
+	AnInt32TextProperty := &models.Property{
+		Name:     "anInt32Text",
+		DataType: []string{"text"},
+	}
+
+	var AnInt32TextModuleConfig map[string]interface{}
+	AnInt32TextModuleConfigBytes := []byte(`{"text2vec-contextionary": {"vectorizePropertyName": true}}`)
+	AnInt32TextErr := json.Unmarshal(AnInt32TextModuleConfigBytes, &AnInt32TextModuleConfig)
+	if AnInt32TextErr != nil {
+		panic(AnInt32TextErr)
+	}
+	AnInt32TextProperty.ModuleConfig = AnInt32TextModuleConfig
+
+	properties = append(properties, AnInt32TextProperty)
+	AnInt64Property := &models.Property{
+		Name:     "anInt64",
+		DataType: []string{"string"},
+	}
+
+	properties = append(properties, AnInt64Property)
+
+	AnInt64TextProperty := &models.Property{
+		Name:     "anInt64Text",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AnInt64TextProperty)
+	ABoolProperty := &models.Property{
+		Name:     "aBool",
+		DataType: []string{"boolean"},
+	}
+
+	properties = append(properties, ABoolProperty)
+
+	ABoolTextProperty := &models.Property{
+		Name:     "aBoolText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, ABoolTextProperty)
+	AStringProperty := &models.Property{
+		Name:     "aString",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AStringProperty)
+
+	ABytesProperty := &models.Property{
+		Name:     "aBytes",
+		DataType: []string{"blob"},
+	}
+
+	properties = append(properties, ABytesProperty)
+
+	RepeatedScalarFieldProperty := &models.Property{
+		Name:     "repeatedScalarField",
+		DataType: []string{"text[]"},
+	}
+
+	properties = append(properties, RepeatedScalarFieldProperty)
+
+	RepeatedScalarFieldTextProperty := &models.Property{
+		Name:     "repeatedScalarFieldText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, RepeatedScalarFieldTextProperty)
+	OptionalScalarFieldProperty := &models.Property{
+		Name:     "optionalScalarField",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, OptionalScalarFieldProperty)
+
+	ATimestampProperty := &models.Property{
+		Name:     "aTimestamp",
+		DataType: []string{"date"},
+	}
+
+	properties = append(properties, ATimestampProperty)
+
+	ATimestampTextProperty := &models.Property{
+		Name:     "aTimestampText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, ATimestampTextProperty)
+	AnIgnoredFieldProperty := &models.Property{
+		Name:     "anIgnoredField",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AnIgnoredFieldProperty)
+
+	AStructFieldProperty := &models.Property{
+		Name:     "aStructField",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AStructFieldProperty)
+
+	AnEnumProperty := &models.Property{
+		Name:     "anEnum",
+		DataType: []string{"int"},
+	}
+
+	properties = append(properties, AnEnumProperty)
+
+	AnEnumTextProperty := &models.Property{
+		Name:     "anEnumText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AnEnumTextProperty)
+	AnOptionalIntProperty := &models.Property{
+		Name:     "anOptionalInt",
+		DataType: []string{"int"},
+	}
+
+	properties = append(properties, AnOptionalIntProperty)
+
+	AnOptionalIntTextProperty := &models.Property{
+		Name:     "anOptionalIntText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, AnOptionalIntTextProperty)
+	OptionalTimestampProperty := &models.Property{
+		Name:     "optionalTimestamp",
+		DataType: []string{"date"},
+	}
+
+	properties = append(properties, OptionalTimestampProperty)
+
+	OptionalTimestampTextProperty := &models.Property{
+		Name:     "optionalTimestampText",
+		DataType: []string{"text"},
+	}
+
+	properties = append(properties, OptionalTimestampTextProperty)
+	return properties
 }
 
 func (s ThingWeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
@@ -610,11 +692,16 @@ func (s Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class
 }
 
 func (s Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
-	return []*models.Property{{
+	properties := []*models.Property{}
+
+	NameProperty := &models.Property{
 		Name:     "name",
 		DataType: []string{"text"},
-	},
 	}
+
+	properties = append(properties, NameProperty)
+
+	return properties
 }
 
 func (s Thing2WeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {

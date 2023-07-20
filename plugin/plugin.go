@@ -2,8 +2,10 @@ package plugin
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	weaviate "github.com/catalystsquad/protoc-gen-go-weaviate/options"
+	"github.com/joomcode/errorx"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -59,6 +61,8 @@ var templateFuncs = map[string]any{
 	"idFieldIsOptional":               idFieldIsOptional,
 	"crossReferenceIdFieldIsOptional": crossReferenceIdFieldIsOptional,
 	"vectorizer":                      vectorizer,
+	"tokenization":                    tokenization,
+	"moduleConfig":                    moduleConfig,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -252,6 +256,21 @@ func vectorizer(m *protogen.Message) string {
 	}
 	// default to no vectorizer
 	return "none"
+}
+
+func tokenization(f *protogen.Field) string {
+	options := getFieldOptions(f)
+	return options.Tokenization
+}
+
+func moduleConfig(f *protogen.Field) string {
+	options := getFieldOptions(f)
+	if options.ModuleConfig != "" {
+		if err := json.Unmarshal([]byte(options.ModuleConfig), &map[string]interface{}{}); err != nil {
+			panic(errorx.IllegalArgument.New("moduleConfig field option is not valid json"))
+		}
+	}
+	return options.ModuleConfig
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {

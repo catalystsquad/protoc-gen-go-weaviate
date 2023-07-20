@@ -33,4 +33,6 @@ extend google.protobuf.FieldOptions {
 
 message WeaviateFieldOptions {
   bool ignore = 7;
+  string tokenization = 8;
+  string moduleConfig = 9;
 }
