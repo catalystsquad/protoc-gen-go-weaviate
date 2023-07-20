@@ -248,49 +248,104 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 	return []*models.Property{{
 		Name:     "aDouble",
 		DataType: []string{"number"},
-	}, {
-		Name:     "aFloat",
-		DataType: []string{"number"},
-	}, {
-		Name:     "anInt32",
-		DataType: []string{"int"},
-	}, {
-		Name:     "anInt64",
-		DataType: []string{"string"},
-	}, {
-		Name:     "aBool",
-		DataType: []string{"boolean"},
-	}, {
-		Name:     "aString",
-		DataType: []string{"text"},
-	}, {
-		Name:     "aBytes",
-		DataType: []string{"blob"},
-	}, {
-		Name:     "repeatedScalarField",
-		DataType: []string{"text[]"},
-	}, {
-		Name:     "optionalScalarField",
-		DataType: []string{"text"},
-	}, {
-		Name:     "aTimestamp",
-		DataType: []string{"date"},
-	}, {
-		Name:     "anIgnoredField",
-		DataType: []string{"text"},
-	}, {
-		Name:     "aStructField",
-		DataType: []string{"text"},
-	}, {
-		Name:     "anEnum",
-		DataType: []string{"int"},
-	}, {
-		Name:     "anOptionalInt",
-		DataType: []string{"int"},
-	}, {
-		Name:     "optionalTimestamp",
-		DataType: []string{"date"},
 	},
+
+		{
+			Name:     "aDoubleText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "aFloat",
+			DataType: []string{"number"},
+		},
+
+		{
+			Name:     "aFloatText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "anInt32",
+			DataType: []string{"int"},
+		},
+
+		{
+			Name:     "anInt32Text",
+			DataType: []string{"text"},
+		}, {
+			Name:     "anInt64",
+			DataType: []string{"string"},
+		},
+
+		{
+			Name:     "anInt64Text",
+			DataType: []string{"text"},
+		}, {
+			Name:     "aBool",
+			DataType: []string{"boolean"},
+		},
+
+		{
+			Name:     "aBoolText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "aString",
+			DataType: []string{"text"},
+		},
+		{
+			Name:     "aBytes",
+			DataType: []string{"blob"},
+		},
+		{
+			Name:     "repeatedScalarField",
+			DataType: []string{"text[]"},
+		},
+
+		{
+			Name:     "repeatedScalarFieldText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "optionalScalarField",
+			DataType: []string{"text"},
+		},
+		{
+			Name:     "aTimestamp",
+			DataType: []string{"date"},
+		},
+
+		{
+			Name:     "aTimestampText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "anIgnoredField",
+			DataType: []string{"text"},
+		},
+		{
+			Name:     "aStructField",
+			DataType: []string{"text"},
+		},
+		{
+			Name:     "anEnum",
+			DataType: []string{"int"},
+		},
+
+		{
+			Name:     "anEnumText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "anOptionalInt",
+			DataType: []string{"int"},
+		},
+
+		{
+			Name:     "anOptionalIntText",
+			DataType: []string{"text"},
+		}, {
+			Name:     "optionalTimestamp",
+			DataType: []string{"date"},
+		},
+
+		{
+			Name:     "optionalTimestampText",
+			DataType: []string{"text"},
+		},
 	}
 }
 
@@ -315,20 +370,26 @@ func (s ThingWeaviateModel) AllWeaviateClassSchemaProperties() []*models.Propert
 func (s ThingWeaviateModel) Data() map[string]interface{} {
 	data := map[string]interface{}{}
 
+	data["aDoubleText"] = fmt.Sprintf("%v", s.ADouble)
 	data["aDouble"] = s.ADouble
 
+	data["aFloatText"] = fmt.Sprintf("%v", s.AFloat)
 	data["aFloat"] = s.AFloat
 
+	data["anInt32Text"] = fmt.Sprintf("%v", s.AnInt32)
 	data["anInt32"] = s.AnInt32
 
+	data["anInt64Text"] = fmt.Sprintf("%v", s.AnInt64)
 	data["anInt64"] = strconv.FormatInt(s.AnInt64, 10)
 
+	data["aBoolText"] = fmt.Sprintf("%v", s.ABool)
 	data["aBool"] = s.ABool
 
 	data["aString"] = s.AString
 
 	data["aBytes"] = s.ABytes
 
+	data["repeatedScalarFieldText"] = fmt.Sprintf("%v", s.RepeatedScalarField)
 	data["repeatedScalarField"] = s.RepeatedScalarField
 
 	if s.OptionalScalarField != nil {
@@ -343,16 +404,20 @@ func (s ThingWeaviateModel) Data() map[string]interface{} {
 
 	data["repeatedMessages"] = []map[string]string{}
 
+	data["aTimestampText"] = fmt.Sprintf("%v", s.ATimestamp)
 	data["aTimestamp"] = s.ATimestamp
 
 	data["aStructField"] = s.AStructField
 
+	data["anEnumText"] = fmt.Sprintf("%v", s.AnEnum)
 	data["anEnum"] = s.AnEnum
 
+	data["anOptionalIntText"] = fmt.Sprintf("%v", lo.FromPtr(s.AnOptionalInt))
 	if s.AnOptionalInt != nil {
 		data["anOptionalInt"] = lo.FromPtr(s.AnOptionalInt)
 	}
 
+	data["optionalTimestampText"] = fmt.Sprintf("%v", lo.FromPtr(s.OptionalTimestamp))
 	if s.OptionalTimestamp != nil {
 		data["optionalTimestamp"] = lo.FromPtr(s.OptionalTimestamp)
 	}

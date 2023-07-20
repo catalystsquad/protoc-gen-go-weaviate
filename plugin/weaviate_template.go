@@ -158,6 +158,12 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
 			},
+			{{ if and  (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") }}
+			{
+			  Name:        "{{ jsonFieldName . }}Text",
+			  DataType:    []string{"text"},
+			},
+			{{- end -}}
             {{- end -}}
     	{{ end }}
 	}
@@ -185,6 +191,13 @@ func (s {{ structName . }}) Data() map[string]interface{} {
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if ne (propertyName .) "id" }}
+    {{- if and (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") (eq (fieldIsCrossReference .) false) }}
+      {{- if fieldIsOptional . }}
+	    data["{{ jsonFieldName . }}Text"] = fmt.Sprintf("%v", lo.FromPtr(s.{{ structFieldName . }}))
+	  {{- else }}
+        data["{{ jsonFieldName . }}Text"] = fmt.Sprintf("%v", s.{{ structFieldName . }})
+      {{- end }}
+	{{- end -}}
 	{{- if fieldIsOptional . }}
 	if s.{{ .GoName }} != nil {
 	data["{{ jsonFieldName . }}"] = {{ dataField . }}
