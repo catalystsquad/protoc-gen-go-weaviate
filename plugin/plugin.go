@@ -64,6 +64,7 @@ var templateFuncs = map[string]any{
 	"tokenization":                    tokenization,
 	"moduleConfig":                    moduleConfig,
 	"classModuleConfig":               classModuleConfig,
+	"summaryEnabled":                  summaryEnabled,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -120,6 +121,8 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			templateMap := map[string]any{
 				"messages": protoFile.Messages,
 			}
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/tidwall/gjson"})
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
@@ -287,6 +290,11 @@ func classModuleConfig(m *protogen.Message) (moduleConfig string) {
 		}
 	}
 	return
+}
+
+func summaryEnabled(m *protogen.Message) bool {
+	options := getMessageOptions(m)
+	return options != nil && options.SummaryEnabled
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {

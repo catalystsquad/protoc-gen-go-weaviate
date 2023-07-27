@@ -211,6 +211,13 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
 			{{- end -}}
             {{- end -}}
     	{{ end }}
+        {{- if summaryEnabled . }}
+        summaryProperty := &models.Property{
+          Name: "_summary",
+          DataType: []string{"text"},
+        }
+        properties = append(properties, summaryProperty)
+        {{- end }}
 	return properties
 }
 
@@ -231,7 +238,7 @@ func (s {{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Propert
 	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
-func (s {{ structName . }}) Data() map[string]interface{} {
+func (s {{ structName . }}) Data() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
@@ -255,10 +262,16 @@ func (s {{ structName . }}) Data() map[string]interface{} {
 	{{- end }}
 	{{- end }}
 	{{- end }}
-
+	{{- if summaryEnabled . }}
+    summary, err := s.SummaryData()
+    if err != nil {
+      return data, err
+    }
+    data["_summary"] = summary
+    {{- end }}
 	data = s.addCrossReferenceData(data)
 	
-	return data
+	return data, nil
 }
 
 func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
@@ -338,9 +351,13 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 		{{- end }}
 	  {{- end }}
     {{- end }}
+    var dataMap map[string]interface{}
+    if dataMap, err = s.Data(); err != nil {
+      return
+    }
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
-		WithProperties(s.Data()).
+		WithProperties(dataMap).
 		{{- if idFieldIsOptional . }}
 		WithID(lo.FromPtr(s.Id)).
 		{{- else }}
@@ -372,6 +389,10 @@ func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client,
 		{{- end }}
 	  {{- end }}
     {{- end }}
+    var dataMap map[string]interface{}
+    if dataMap, err = s.Data(); err != nil {
+      return
+    }
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
@@ -379,7 +400,7 @@ func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client,
 		{{- else }}
 		WithID(s.Id).
 		{{- end }}
-		WithProperties(s.Data()).
+		WithProperties(dataMap).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -409,6 +430,10 @@ func (s {{ structName . }}) EnsureClassWithoutCrossReferences(client *weaviate.C
 
 func (s {{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
+}
+
+func (s {{ structName . }}) SummaryData() (string, error) {
+	return getStringValue(s)
 }
 {{ end }}
 {{ end }}
@@ -489,5 +514,22 @@ func containsProperty(source []*models.Property, property *models.Property) bool
 	return lo.ContainsBy(source, func(item *models.Property) bool {
 		return item.Name == property.Name
 	})
+}
+
+func getStringValue(x interface{}) (value string, err error) {
+	var jsonBytes []byte
+	if jsonBytes, err = json.Marshal(x); err != nil {
+		return
+	}
+	builder := new(strings.Builder)
+	for _, result := range gjson.GetBytes(jsonBytes, "@values").Array() {
+		resultString := result.String()
+		if resultString != "" {
+			builder.WriteString(resultString)
+			builder.WriteString(" ")
+		}
+	}
+	value = builder.String()
+	return
 }
 `

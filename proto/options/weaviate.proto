@@ -25,6 +25,7 @@ message WeaviateMessageOptions {
   bool generate = 1;
   string vectorizer = 2;
   string moduleConfig = 3;
+  bool summaryEnabled = 4;
 }
 
 // Field level specifications
