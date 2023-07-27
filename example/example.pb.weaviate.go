@@ -223,10 +223,20 @@ func (s ThingWeaviateModel) WeaviateClassName() string {
 }
 
 func (s ThingWeaviateModel) FullWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
 	}
+
+	var ThingWeaviateModelModuleConfig map[string]interface{}
+	ThingWeaviateModelModuleConfigBytes := []byte(`{"reranker-cohere": {}}`)
+	ThingWeaviateModelErr := json.Unmarshal(ThingWeaviateModelModuleConfigBytes, &ThingWeaviateModelModuleConfig)
+	if ThingWeaviateModelErr != nil {
+		panic(ThingWeaviateModelErr)
+	}
+	class.ModuleConfig = ThingWeaviateModelModuleConfig
+
+	return class
 }
 
 func (s ThingWeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
@@ -237,11 +247,21 @@ func (s ThingWeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 }
 
 func (s ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Vectorizer: "none",
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
+
+	var ThingWeaviateModelModuleConfig map[string]interface{}
+	ThingWeaviateModelModuleConfigBytes := []byte(`{"reranker-cohere": {}}`)
+	ThingWeaviateModelErr := json.Unmarshal(ThingWeaviateModelModuleConfigBytes, &ThingWeaviateModelModuleConfig)
+	if ThingWeaviateModelErr != nil {
+		panic(ThingWeaviateModelErr)
+	}
+	class.ModuleConfig = ThingWeaviateModelModuleConfig
+
+	return class
 }
 
 func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
@@ -254,12 +274,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, ADoubleProperty)
 
-	ADoubleTextProperty := &models.Property{
+	ADoubleWTextProperty := &models.Property{
 		Name:     "aDoubleText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, ADoubleTextProperty)
+	properties = append(properties, ADoubleWTextProperty)
 	AFloatProperty := &models.Property{
 		Name:     "aFloat",
 		DataType: []string{"number"},
@@ -267,12 +287,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, AFloatProperty)
 
-	AFloatTextProperty := &models.Property{
+	AFloatWTextProperty := &models.Property{
 		Name:     "aFloatText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, AFloatTextProperty)
+	properties = append(properties, AFloatWTextProperty)
 	AnInt32Property := &models.Property{
 		Name:     "anInt32",
 		DataType: []string{"int"},
@@ -288,7 +308,7 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, AnInt32Property)
 
-	AnInt32TextProperty := &models.Property{
+	AnInt32WTextProperty := &models.Property{
 		Name:     "anInt32Text",
 		DataType: []string{"text"},
 	}
@@ -299,9 +319,9 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 	if AnInt32TextErr != nil {
 		panic(AnInt32TextErr)
 	}
-	AnInt32TextProperty.ModuleConfig = AnInt32TextModuleConfig
+	AnInt32WTextProperty.ModuleConfig = AnInt32TextModuleConfig
 
-	properties = append(properties, AnInt32TextProperty)
+	properties = append(properties, AnInt32WTextProperty)
 	AnInt64Property := &models.Property{
 		Name:     "anInt64",
 		DataType: []string{"string"},
@@ -309,12 +329,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, AnInt64Property)
 
-	AnInt64TextProperty := &models.Property{
+	AnInt64WTextProperty := &models.Property{
 		Name:     "anInt64Text",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, AnInt64TextProperty)
+	properties = append(properties, AnInt64WTextProperty)
 	ABoolProperty := &models.Property{
 		Name:     "aBool",
 		DataType: []string{"boolean"},
@@ -322,12 +342,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, ABoolProperty)
 
-	ABoolTextProperty := &models.Property{
+	ABoolWTextProperty := &models.Property{
 		Name:     "aBoolText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, ABoolTextProperty)
+	properties = append(properties, ABoolWTextProperty)
 	AStringProperty := &models.Property{
 		Name:         "aString",
 		DataType:     []string{"text"},
@@ -350,12 +370,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, RepeatedScalarFieldProperty)
 
-	RepeatedScalarFieldTextProperty := &models.Property{
+	RepeatedScalarFieldWTextProperty := &models.Property{
 		Name:     "repeatedScalarFieldText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, RepeatedScalarFieldTextProperty)
+	properties = append(properties, RepeatedScalarFieldWTextProperty)
 	OptionalScalarFieldProperty := &models.Property{
 		Name:     "optionalScalarField",
 		DataType: []string{"text"},
@@ -370,12 +390,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, ATimestampProperty)
 
-	ATimestampTextProperty := &models.Property{
+	ATimestampWTextProperty := &models.Property{
 		Name:     "aTimestampText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, ATimestampTextProperty)
+	properties = append(properties, ATimestampWTextProperty)
 	AnIgnoredFieldProperty := &models.Property{
 		Name:     "anIgnoredField",
 		DataType: []string{"text"},
@@ -397,12 +417,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, AnEnumProperty)
 
-	AnEnumTextProperty := &models.Property{
+	AnEnumWTextProperty := &models.Property{
 		Name:     "anEnumText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, AnEnumTextProperty)
+	properties = append(properties, AnEnumWTextProperty)
 	AnOptionalIntProperty := &models.Property{
 		Name:     "anOptionalInt",
 		DataType: []string{"int"},
@@ -410,12 +430,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, AnOptionalIntProperty)
 
-	AnOptionalIntTextProperty := &models.Property{
+	AnOptionalIntWTextProperty := &models.Property{
 		Name:     "anOptionalIntText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, AnOptionalIntTextProperty)
+	properties = append(properties, AnOptionalIntWTextProperty)
 	OptionalTimestampProperty := &models.Property{
 		Name:     "optionalTimestamp",
 		DataType: []string{"date"},
@@ -423,12 +443,12 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, OptionalTimestampProperty)
 
-	OptionalTimestampTextProperty := &models.Property{
+	OptionalTimestampWTextProperty := &models.Property{
 		Name:     "optionalTimestampText",
 		DataType: []string{"text"},
 	}
 
-	properties = append(properties, OptionalTimestampTextProperty)
+	properties = append(properties, OptionalTimestampWTextProperty)
 	return properties
 }
 
@@ -671,10 +691,12 @@ func (s Thing2WeaviateModel) WeaviateClassName() string {
 }
 
 func (s Thing2WeaviateModel) FullWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
 	}
+
+	return class
 }
 
 func (s Thing2WeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
@@ -685,11 +707,13 @@ func (s Thing2WeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 }
 
 func (s Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Vectorizer: "none",
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
+
+	return class
 }
 
 func (s Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {

@@ -63,6 +63,7 @@ var templateFuncs = map[string]any{
 	"vectorizer":                      vectorizer,
 	"tokenization":                    tokenization,
 	"moduleConfig":                    moduleConfig,
+	"classModuleConfig":               classModuleConfig,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -268,6 +269,17 @@ func tokenization(f *protogen.Field) (tokenization string) {
 
 func moduleConfig(f *protogen.Field) (moduleConfig string) {
 	options := getFieldOptions(f)
+	if options != nil && options.ModuleConfig != "" {
+		moduleConfig = options.ModuleConfig
+		if err := json.Unmarshal([]byte(moduleConfig), &map[string]interface{}{}); err != nil {
+			panic(errorx.IllegalArgument.New("moduleConfig field option is not valid json"))
+		}
+	}
+	return
+}
+
+func classModuleConfig(m *protogen.Message) (moduleConfig string) {
+	options := getMessageOptions(m)
 	if options != nil && options.ModuleConfig != "" {
 		moduleConfig = options.ModuleConfig
 		if err := json.Unmarshal([]byte(moduleConfig), &map[string]interface{}{}); err != nil {

@@ -129,10 +129,20 @@ func (s {{ structName . }}) WeaviateClassName() string {
 }
 
 func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
-	return models.Class{
+    class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
 	}
+	{{ if classModuleConfig . }}
+	var {{ structName . }}ModuleConfig map[string]interface{}
+	{{ structName . }}ModuleConfigBytes := []byte(` + "`" + `{{ classModuleConfig . }}` + "`" + `)
+	{{ structName . }}Err := json.Unmarshal({{ structName . }}ModuleConfigBytes, &{{ structName . }}ModuleConfig)
+	if {{ structName . }}Err != nil {
+	  panic({{ structName . }}Err)
+	}
+	class.ModuleConfig = {{ structName . }}ModuleConfig
+	{{ end }}
+	return class
 }
 
 func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
@@ -143,11 +153,23 @@ func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
 }
 
 func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Vectorizer: "{{ vectorizer . }}",
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
+	
+	{{ if classModuleConfig . }}
+	var {{ structName . }}ModuleConfig map[string]interface{}
+	{{ structName . }}ModuleConfigBytes := []byte(` + "`" + `{{ classModuleConfig . }}` + "`" + `)
+	{{ structName . }}Err := json.Unmarshal({{ structName . }}ModuleConfigBytes, &{{ structName . }}ModuleConfig)
+	if {{ structName . }}Err != nil {
+	  panic({{ structName . }}Err)
+	}
+	class.ModuleConfig = {{ structName . }}ModuleConfig
+	{{ end }}
+
+	return class
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
