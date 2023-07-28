@@ -177,7 +177,7 @@ func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class 
 func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
   		{{ range .Fields -}}
-		    {{ if and (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) }}
+		    {{ if and (includeField . ) (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) }}
 			{{ structFieldName . }}Property := &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
@@ -224,16 +224,16 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
-	return []*models.Property{
-  		{{- range .Fields -}}
-		    {{ if and (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
-			{
+	properties := []*models.Property{}
+  		{{- range .Fields }}
+		    {{ if and (includeField . ) (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
+			properties = append(properties, &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
-			},
+			})
             {{- end -}}
     	{{ end }}
-	}
+	return properties
 }
 
 func (s {{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Property {
@@ -278,7 +278,7 @@ func (s {{ structName . }}) Data() (map[string]interface{}, error) {
 
 func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
     {{- range .Fields }}
-    {{- if fieldIsCrossReference . -}}
+    {{- if and (includeField . ) (fieldIsCrossReference .) }}
     {{- if fieldIsRepeated . }}
 	for _, crossReference := range s.{{ structFieldName . }} {
       if crossReference != nil {

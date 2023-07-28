@@ -397,13 +397,6 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 	}
 
 	properties = append(properties, ATimestampWTextProperty)
-	AnIgnoredFieldProperty := &models.Property{
-		Name:     "anIgnoredField",
-		DataType: []string{"text"},
-	}
-
-	properties = append(properties, AnIgnoredFieldProperty)
-
 	AStructFieldProperty := &models.Property{
 		Name:     "aStructField",
 		DataType: []string{"text"},
@@ -459,17 +452,22 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 }
 
 func (s ThingWeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
-	return []*models.Property{{
+	properties := []*models.Property{}
+
+	properties = append(properties, &models.Property{
 		Name:     "associatedThing",
 		DataType: []string{"Thing2"},
-	}, {
+	})
+	properties = append(properties, &models.Property{
 		Name:     "optionalAssociatedThing",
 		DataType: []string{"Thing2"},
-	}, {
+	})
+	properties = append(properties, &models.Property{
 		Name:     "repeatedMessages",
 		DataType: []string{"Thing2"},
-	},
-	}
+	})
+
+	return properties
 }
 
 func (s ThingWeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
@@ -752,7 +750,9 @@ func (s Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []
 }
 
 func (s Thing2WeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
-	return []*models.Property{}
+	properties := []*models.Property{}
+
+	return properties
 }
 
 func (s Thing2WeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
