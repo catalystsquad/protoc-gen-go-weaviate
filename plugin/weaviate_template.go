@@ -333,7 +333,7 @@ func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client,
 
 func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	{{- range .Fields }}
-	  {{- if fieldIsCrossReference . -}}
+	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
 			if crossReference != nil {
@@ -371,7 +371,7 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 
 func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	{{- range .Fields }}
-	  {{- if fieldIsCrossReference . -}}
+	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
             if crossReference != nil {
