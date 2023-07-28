@@ -255,11 +255,10 @@ func crossReferenceIdFieldIsOptional(field *protogen.Field) bool {
 
 func vectorizer(m *protogen.Message) string {
 	opts := getMessageOptions(m)
-	if opts.Vectorizer != "" {
+	if opts != nil && opts.Vectorizer != "" {
 		return opts.Vectorizer
 	}
-	// default to no vectorizer
-	return "none"
+	return ""
 }
 
 func tokenization(f *protogen.Field) (tokenization string) {

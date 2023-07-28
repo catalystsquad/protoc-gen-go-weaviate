@@ -155,7 +155,9 @@ func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
 func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
+        {{- if vectorizer . }}
 		Vectorizer: "{{ vectorizer . }}",
+        {{- end }}
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
 	
