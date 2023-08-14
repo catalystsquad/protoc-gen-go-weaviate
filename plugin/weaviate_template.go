@@ -70,8 +70,8 @@ func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err er
     return
 }
 
-func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, err error) {
-    model = {{ structName . }}{}
+func (s *{{ protoStructName . }}) ToWeaviateModel() (model *{{ structName . }}, err error) {
+    model = &{{ structName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if isTimestamp . }}
@@ -114,7 +114,7 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() (model {{ structName . }}, e
 		if err != nil {
 			return model, err
 		}
-		model.{{ structFieldName . }} = lo.ToPtr(model{{ structFieldName . }})
+		model.{{ structFieldName . }} = model{{ structFieldName . }}
 	}
     {{- else }}
     model.{{ structFieldName . }} = s.{{ structFieldName . }}
@@ -129,10 +129,20 @@ func (s {{ structName . }}) WeaviateClassName() string {
 }
 
 func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
-	return models.Class{
+    class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
 	}
+	{{ if classModuleConfig . }}
+	var {{ structName . }}ModuleConfig map[string]interface{}
+	{{ structName . }}ModuleConfigBytes := []byte(` + "`" + `{{ classModuleConfig . }}` + "`" + `)
+	{{ structName . }}Err := json.Unmarshal({{ structName . }}ModuleConfigBytes, &{{ structName . }}ModuleConfig)
+	if {{ structName . }}Err != nil {
+	  panic({{ structName . }}Err)
+	}
+	class.ModuleConfig = {{ structName . }}ModuleConfig
+	{{ end }}
+	return class
 }
 
 func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
@@ -143,48 +153,105 @@ func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
 }
 
 func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
-	return models.Class{
+	class := models.Class{
 		Class:      s.WeaviateClassName(),
+        {{- if vectorizer . }}
 		Vectorizer: "{{ vectorizer . }}",
+        {{- end }}
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
 	}
+	
+	{{ if classModuleConfig . }}
+	var {{ structName . }}ModuleConfig map[string]interface{}
+	{{ structName . }}ModuleConfigBytes := []byte(` + "`" + `{{ classModuleConfig . }}` + "`" + `)
+	{{ structName . }}Err := json.Unmarshal({{ structName . }}ModuleConfigBytes, &{{ structName . }}ModuleConfig)
+	if {{ structName . }}Err != nil {
+	  panic({{ structName . }}Err)
+	}
+	class.ModuleConfig = {{ structName . }}ModuleConfig
+	{{ end }}
+
+	return class
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
-	return []*models.Property{
-  		{{- range .Fields -}}
-		    {{ if and (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) -}}
-			{
+	properties := []*models.Property{}
+  		{{ range .Fields -}}
+		    {{ if and (includeField . ) (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) }}
+			{{ structFieldName . }}Property := &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
-			},
+              {{- if and (eq (propertyDataType .) "text") (tokenization .) }}
+              Tokenization: "{{ tokenization . }}",
+              {{- end }}
+			}
+            {{ if moduleConfig . }}
+            var {{ structFieldName . }}ModuleConfig map[string]interface{}
+            {{ structFieldName . }}ModuleConfigBytes := []byte(` + "`" + `{{ moduleConfig . }}` + "`" + `)
+            {{ structFieldName . }}Err := json.Unmarshal({{ structFieldName . }}ModuleConfigBytes, &{{ structFieldName . }}ModuleConfig)
+            if {{ structFieldName . }}Err != nil {
+              panic({{ structFieldName . }}Err)
+            }
+            {{ structFieldName . }}Property.ModuleConfig = {{ structFieldName . }}ModuleConfig
+            {{ end }}
+            properties = append(properties, {{ structFieldName . }}Property)
+			{{ if and  (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") }}
+			{{ structFieldName . }}WTextProperty := &models.Property{
+			  Name:        "{{ jsonFieldName . }}Text",
+			  DataType:    []string{"text"},
+			}
+			{{ if moduleConfig . }}
+            var {{ structFieldName . }}TextModuleConfig map[string]interface{}
+            {{ structFieldName . }}TextModuleConfigBytes := []byte(` + "`" + `{{ moduleConfig . }}` + "`" + `)
+            {{ structFieldName . }}TextErr := json.Unmarshal({{ structFieldName . }}TextModuleConfigBytes, &{{ structFieldName . }}TextModuleConfig)
+            if {{ structFieldName . }}TextErr != nil {
+              panic({{ structFieldName . }}TextErr)
+            }
+            {{ structFieldName . }}WTextProperty.ModuleConfig = {{ structFieldName . }}TextModuleConfig
+            {{ end }}
+            properties = append(properties, {{ structFieldName . }}WTextProperty)
+			{{- end -}}
             {{- end -}}
     	{{ end }}
-	}
+        {{- if summaryEnabled . }}
+        summaryProperty := &models.Property{
+          Name: "_summary",
+          DataType: []string{"text"},
+        }
+        properties = append(properties, summaryProperty)
+        {{- end }}
+	return properties
 }
 
 func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
-	return []*models.Property{
-  		{{- range .Fields -}}
-		    {{ if and (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
-			{
+	properties := []*models.Property{}
+  		{{- range .Fields }}
+		    {{ if and (includeField . ) (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
+			properties = append(properties, &models.Property{
 			  Name:        "{{ jsonFieldName . }}",
 			  DataType:    []string{"{{ propertyDataType . }}"},
-			},
+			})
             {{- end -}}
     	{{ end }}
-	}
+	return properties
 }
 
 func (s {{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Property {
 	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
-func (s {{ structName . }}) Data() map[string]interface{} {
+func (s {{ structName . }}) Data() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
 	{{- if ne (propertyName .) "id" }}
+    {{- if and (ne (propertyDataType .) "text") (ne (propertyDataType .) "blob") (eq (fieldIsCrossReference .) false) }}
+      {{- if fieldIsOptional . }}
+	    data["{{ jsonFieldName . }}Text"] = fmt.Sprintf("%v", lo.FromPtr(s.{{ structFieldName . }}))
+	  {{- else }}
+        data["{{ jsonFieldName . }}Text"] = fmt.Sprintf("%v", s.{{ structFieldName . }})
+      {{- end }}
+	{{- end -}}
 	{{- if fieldIsOptional . }}
 	if s.{{ .GoName }} != nil {
 	data["{{ jsonFieldName . }}"] = {{ dataField . }}
@@ -197,45 +264,49 @@ func (s {{ structName . }}) Data() map[string]interface{} {
 	{{- end }}
 	{{- end }}
 	{{- end }}
-
+	{{- if summaryEnabled . }}
+    summary, err := s.SummaryData()
+    if err != nil {
+      return data, err
+    }
+    data["_summary"] = summary
+    {{- end }}
 	data = s.addCrossReferenceData(data)
 	
-	return data
+	return data, nil
 }
 
 func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
     {{- range .Fields }}
-    {{- if fieldIsCrossReference . -}}
+    {{- if and (includeField . ) (fieldIsCrossReference .) }}
     {{- if fieldIsRepeated . }}
 	for _, crossReference := range s.{{ structFieldName . }} {
-      {{- if crossReferenceIdFieldIsOptional . }}
-      id := lo.FromPtr(crossReference.Id)
-	  {{- else }}
-      id := crossReference.Id
-      {{ end }}
-      {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-	  data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      if crossReference != nil {
+        {{- if crossReferenceIdFieldIsOptional . }}
+        id := lo.FromPtr(crossReference.Id)
+	    {{- else }}
+        id := crossReference.Id
+        {{ end }}
+        {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+	    data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      }
 	}
     {{- else }}
-	{{ if fieldIsOptional . -}}
 	if s.{{ structFieldName . }} != nil {
-    {{- end -}}
-	{{- if crossReferenceIdFieldIsOptional . }}
-	if lo.FromPtr(s.{{ structFieldName . }}.Id) != "" {
-	{{- else }}
-	if s.{{ structFieldName . }}.Id != "" {
-	{{- end }}
-	{{- if crossReferenceIdFieldIsOptional . }}
-    id := lo.FromPtr(s.{{ structFieldName . }}.Id)
-    {{- else }}
-    id := s.{{ structFieldName . }}.Id
-    {{ end }}
-	{{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
-    data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
-    }
-	{{ if fieldIsOptional . -}}
+	  {{- if crossReferenceIdFieldIsOptional . }}
+	  if lo.FromPtr(s.{{ structFieldName . }}.Id) != "" {
+	  {{- else }}
+	  if s.{{ structFieldName . }}.Id != "" {
+	  {{- end }}
+	  {{- if crossReferenceIdFieldIsOptional . }}
+      id := lo.FromPtr(s.{{ structFieldName . }}.Id)
+      {{- else }}
+      id := s.{{ structFieldName . }}.Id
+      {{ end }}
+	  {{ structFieldName . }}Reference := map[string]string{"beacon": fmt.Sprintf("weaviate://localhost/%s", id)}
+      data["{{ jsonFieldName . }}"] = append(data["{{ jsonFieldName . }}"].([]map[string]string), {{ structFieldName . }}Reference)
+      }
 	}
-    {{- end -}}
     {{- end -}}
     {{- end -}}
 	{{- end }}
@@ -262,34 +333,33 @@ func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client,
 
 func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	{{- range .Fields }}
-	  {{- if fieldIsCrossReference . -}}
+	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
-			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
-            if err != nil {
-              return
-            }
+			if crossReference != nil {
+			  _, err = crossReference.Upsert(ctx, client, consistencyLevel)
+              if err != nil {
+                return
+              }
+			}
 	      }
         {{- else }}
-        {{- if fieldIsOptional . }}
         if s.{{ structFieldName . }} != nil {
 		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return
 		  }
         }
-        {{- else }}
-          _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
-		  if err != nil {
-		    return
-		  }
-        {{- end }}
 		{{- end }}
 	  {{- end }}
     {{- end }}
+    var dataMap map[string]interface{}
+    if dataMap, err = s.Data(); err != nil {
+      return
+    }
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
-		WithProperties(s.Data()).
+		WithProperties(dataMap).
 		{{- if idFieldIsOptional . }}
 		WithID(lo.FromPtr(s.Id)).
 		{{- else }}
@@ -301,31 +371,30 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 
 func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	{{- range .Fields }}
-	  {{- if fieldIsCrossReference . -}}
+	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
-			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
-            if err != nil {
-              return
+            if crossReference != nil {
+              _, err = crossReference.Upsert(ctx, client, consistencyLevel)
+              if err != nil {
+                return
+              }
             }
 	      }
         {{- else }}
-        {{- if fieldIsOptional . }}
         if s.{{ structFieldName . }} != nil {
 		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return
 		  }
         }
-        {{- else }}
-          _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
-		  if err != nil {
-		    return
-		  }
-        {{- end }}
 		{{- end }}
 	  {{- end }}
     {{- end }}
+    var dataMap map[string]interface{}
+    if dataMap, err = s.Data(); err != nil {
+      return
+    }
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
@@ -333,7 +402,7 @@ func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client,
 		{{- else }}
 		WithID(s.Id).
 		{{- end }}
-		WithProperties(s.Data()).
+		WithProperties(dataMap).
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
 }
@@ -363,6 +432,10 @@ func (s {{ structName . }}) EnsureClassWithoutCrossReferences(client *weaviate.C
 
 func (s {{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
+}
+
+func (s {{ structName . }}) SummaryData() (string, error) {
+	return getStringValue(s)
 }
 {{ end }}
 {{ end }}
@@ -443,5 +516,22 @@ func containsProperty(source []*models.Property, property *models.Property) bool
 	return lo.ContainsBy(source, func(item *models.Property) bool {
 		return item.Name == property.Name
 	})
+}
+
+func getStringValue(x interface{}) (value string, err error) {
+	var jsonBytes []byte
+	if jsonBytes, err = json.Marshal(x); err != nil {
+		return
+	}
+	builder := new(strings.Builder)
+	for _, result := range gjson.GetBytes(jsonBytes, "@values").Array() {
+		resultString := result.String()
+		if resultString != "" {
+			builder.WriteString(resultString)
+			builder.WriteString(" ")
+		}
+	}
+	value = builder.String()
+	return
 }
 `

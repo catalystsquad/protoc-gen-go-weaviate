@@ -2,8 +2,10 @@ package plugin
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	weaviate "github.com/catalystsquad/protoc-gen-go-weaviate/options"
+	"github.com/joomcode/errorx"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -59,6 +61,10 @@ var templateFuncs = map[string]any{
 	"idFieldIsOptional":               idFieldIsOptional,
 	"crossReferenceIdFieldIsOptional": crossReferenceIdFieldIsOptional,
 	"vectorizer":                      vectorizer,
+	"tokenization":                    tokenization,
+	"moduleConfig":                    moduleConfig,
+	"classModuleConfig":               classModuleConfig,
+	"summaryEnabled":                  summaryEnabled,
 }
 
 func New(opts protogen.Options, request *pluginpb.CodeGeneratorRequest) (*Builder, error) {
@@ -115,6 +121,8 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			templateMap := map[string]any{
 				"messages": protoFile.Messages,
 			}
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/tidwall/gjson"})
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
@@ -165,12 +173,13 @@ func getStructFieldType(field *protogen.Field) (datatype string) {
 	} else {
 		datatype = getStructFieldNonStructType(field)
 	}
-	if fieldIsRepeated(field) {
-		datatype = fmt.Sprintf("[]%s", datatype)
-	}
 	if isPointer(field) {
 		datatype = fmt.Sprintf("*%s", datatype)
 	}
+	if fieldIsRepeated(field) {
+		datatype = fmt.Sprintf("[]%s", datatype)
+	}
+
 	return
 }
 
@@ -191,7 +200,7 @@ func fieldIsRepeated(field *protogen.Field) bool {
 }
 
 func isPointer(field *protogen.Field) bool {
-	return field.Desc.HasOptionalKeyword()
+	return isStructType(field) || field.Desc.HasOptionalKeyword()
 }
 
 func getClassName(message *protogen.Message) string {
@@ -246,11 +255,45 @@ func crossReferenceIdFieldIsOptional(field *protogen.Field) bool {
 
 func vectorizer(m *protogen.Message) string {
 	opts := getMessageOptions(m)
-	if opts.Vectorizer != "" {
+	if opts != nil && opts.Vectorizer != "" {
 		return opts.Vectorizer
 	}
-	// default to no vectorizer
-	return "none"
+	return ""
+}
+
+func tokenization(f *protogen.Field) (tokenization string) {
+	options := getFieldOptions(f)
+	if options != nil {
+		tokenization = options.Tokenization
+	}
+	return
+}
+
+func moduleConfig(f *protogen.Field) (moduleConfig string) {
+	options := getFieldOptions(f)
+	if options != nil && options.ModuleConfig != "" {
+		moduleConfig = options.ModuleConfig
+		if err := json.Unmarshal([]byte(moduleConfig), &map[string]interface{}{}); err != nil {
+			panic(errorx.IllegalArgument.New("moduleConfig field option is not valid json"))
+		}
+	}
+	return
+}
+
+func classModuleConfig(m *protogen.Message) (moduleConfig string) {
+	options := getMessageOptions(m)
+	if options != nil && options.ModuleConfig != "" {
+		moduleConfig = options.ModuleConfig
+		if err := json.Unmarshal([]byte(moduleConfig), &map[string]interface{}{}); err != nil {
+			panic(errorx.IllegalArgument.New("moduleConfig field option is not valid json"))
+		}
+	}
+	return
+}
+
+func summaryEnabled(m *protogen.Message) bool {
+	options := getMessageOptions(m)
+	return options != nil && options.SummaryEnabled
 }
 
 func getWeaviateModelReturnType(m *protogen.Message) protoreflect.Name {

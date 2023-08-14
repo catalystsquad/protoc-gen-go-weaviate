@@ -6,9 +6,12 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.21.0
 	github.com/catalystsquad/app-utils-go v1.0.7
 	github.com/google/go-cmp v0.5.9
+	github.com/google/uuid v1.3.0
+	github.com/joomcode/errorx v1.1.0
 	github.com/orlangure/gnomock v0.28.0
 	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.2
+	github.com/tidwall/gjson v1.15.0
 	github.com/weaviate/weaviate v1.19.0
 	github.com/weaviate/weaviate-go-client/v4 v4.8.0
 	google.golang.org/protobuf v1.30.0
@@ -33,8 +36,6 @@ require (
 	github.com/go-openapi/validate v0.21.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.3.0 // indirect
-	github.com/joomcode/errorx v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -44,6 +45,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
