@@ -568,18 +568,12 @@ func (s ThingWeaviateModel) exists(ctx context.Context, client *weaviate.Client)
 	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
 }
 
-func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
-	var exists bool
-	var err error
-	if exists, err = s.exists(ctx, client); err != nil {
-		return nil, err
-	}
-	if exists {
+func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.Create(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "already exists") {
 		err = s.Update(ctx, client, consistencyLevel)
-		return nil, err
-	} else {
-		return s.Create(ctx, client, consistencyLevel)
 	}
+	return
 }
 
 func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
@@ -777,18 +771,12 @@ func (s Thing2WeaviateModel) exists(ctx context.Context, client *weaviate.Client
 	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
 }
 
-func (s Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (*data.ObjectWrapper, error) {
-	var exists bool
-	var err error
-	if exists, err = s.exists(ctx, client); err != nil {
-		return nil, err
-	}
-	if exists {
+func (s Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.Create(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "already exists") {
 		err = s.Update(ctx, client, consistencyLevel)
-		return nil, err
-	} else {
-		return s.Create(ctx, client, consistencyLevel)
 	}
+	return
 }
 
 func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
