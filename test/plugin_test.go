@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	client "github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/data/replication"
+	"github.com/weaviate/weaviate-go-client/v4/weaviate/filters"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/graphql"
 	"github.com/weaviate/weaviate/entities/models"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -97,7 +98,7 @@ func (s *PluginSuite) TestPlugin() {
 	_, err = thingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query for thing
-	response := s.queryForThings()
+	response := s.queryForThings(nil)
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
 		return *item.Id
@@ -107,6 +108,20 @@ func (s *PluginSuite) TestPlugin() {
 	resultThingProto, err := resultThing.ToProto()
 	require.NoError(s.T(), err)
 	assertProtoEquality(s.T(), thing, resultThingProto)
+	// test summary search by querying the summary field for the name of the associated thing
+	query := fmt.Sprintf("*%s*", strings.ToLower(thing.AssociatedThing.Name))
+	where := &filters.WhereBuilder{}
+	where = where.WithPath([]string{"_summary"}).WithOperator(filters.Like).WithValueText(query)
+	summarySearchResponse := s.queryForThings(where)
+	summarySearchThings, err := ThingWeaviateModelsFromGraphqlResult(summarySearchResponse)
+	summarySearchThingsMap := lo.KeyBy(summarySearchThings, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	summarySearchresultThing := summarySearchThingsMap[*thing.Id]
+	require.NotNil(s.T(), resultThing)
+	summarySearchresultThingProto, err := summarySearchresultThing.ToProto()
+	require.NoError(s.T(), err)
+	assertProtoEquality(s.T(), thing, summarySearchresultThingProto)
 	// update related object
 	updatedThing := resultThingProto.AssociatedThing
 	name := gofakeit.Name()
@@ -117,7 +132,7 @@ func (s *PluginSuite) TestPlugin() {
 	err = updatedThingModel.Update(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query again
-	postUpdateResponse := s.queryForThings()
+	postUpdateResponse := s.queryForThings(nil)
 	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
 	require.NoError(s.T(), err)
 	postUpdateResultThingMap := lo.KeyBy(postUpdateThings, func(item ThingWeaviateModel) string {
@@ -158,7 +173,7 @@ func (s *PluginSuite) TestUpsert() {
 	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query for thing
-	response := s.queryForThings()
+	response := s.queryForThings(nil)
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
 	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
 		return *item.Id
@@ -174,7 +189,7 @@ func (s *PluginSuite) TestUpsert() {
 	_, err = updatedModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
 	// query again
-	postUpdateResponse := s.queryForThings()
+	postUpdateResponse := s.queryForThings(nil)
 	postUpdateThings, err := ThingWeaviateModelsFromGraphqlResult(postUpdateResponse)
 	require.NoError(s.T(), err)
 	var postUpdateResultThing *Thing
@@ -199,12 +214,16 @@ func (s *PluginSuite) deleteClass(class string) {
 	}
 }
 
-func (s *PluginSuite) queryForThings() *models.GraphQLResponse {
-	return s.queryForClass(thingClass, thingFields)
+func (s *PluginSuite) queryForThings(where *filters.WhereBuilder) *models.GraphQLResponse {
+	return s.queryForClass(thingClass, thingFields, where)
 }
 
-func (s *PluginSuite) queryForClass(class string, fields []graphql.Field) *models.GraphQLResponse {
-	response, err := weaviateClient.GraphQL().Get().WithFields(fields...).WithClassName(class).Do(context.Background())
+func (s *PluginSuite) queryForClass(class string, fields []graphql.Field, where *filters.WhereBuilder) *models.GraphQLResponse {
+	builder := weaviateClient.GraphQL().Get().WithFields(fields...).WithClassName(class)
+	if where != nil {
+		builder = builder.WithWhere(where)
+	}
+	response, err := builder.Do(context.Background())
 	require.NoError(s.T(), err)
 	require.Len(s.T(), response.Errors, 0)
 	return response

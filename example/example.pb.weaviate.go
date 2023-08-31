@@ -444,9 +444,18 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 
 	properties = append(properties, OptionalTimestampWTextProperty)
 	summaryProperty := &models.Property{
-		Name:     "_summary",
-		DataType: []string{"text"},
+		Name:         "_summary",
+		DataType:     []string{"text"},
+		Tokenization: "field",
 	}
+	var summaryModuleConfig map[string]interface{}
+	summaryModuleConfigBytes := []byte(`{"text2vec-contextionary": {"skip": true}}`)
+	summaryModuleConfigErr := json.Unmarshal(summaryModuleConfigBytes, &summaryModuleConfig)
+	if summaryModuleConfigErr != nil {
+		panic(summaryModuleConfigErr)
+	}
+	summaryProperty.ModuleConfig = summaryModuleConfig
+
 	properties = append(properties, summaryProperty)
 	return properties
 }
@@ -923,6 +932,6 @@ func getStringValue(x interface{}) (value string, err error) {
 			builder.WriteString(" ")
 		}
 	}
-	value = builder.String()
+	value = strings.ToLower(builder.String())
 	return
 }

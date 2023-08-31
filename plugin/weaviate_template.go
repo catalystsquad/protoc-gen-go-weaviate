@@ -217,7 +217,17 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
         summaryProperty := &models.Property{
           Name: "_summary",
           DataType: []string{"text"},
+          Tokenization: "field",
         }
+        {{- if summaryModuleConfig . }}
+        var summaryModuleConfig map[string]interface{}
+	    summaryModuleConfigBytes := []byte(` + "`" + `{{ summaryModuleConfig . }}` + "`" + `)
+	    summaryModuleConfigErr := json.Unmarshal(summaryModuleConfigBytes, &summaryModuleConfig)
+	    if summaryModuleConfigErr != nil {
+	      panic(summaryModuleConfigErr)
+	    }
+	    summaryProperty.ModuleConfig = summaryModuleConfig
+        {{ end }}
         properties = append(properties, summaryProperty)
         {{- end }}
 	return properties
@@ -525,7 +535,7 @@ func getStringValue(x interface{}) (value string, err error) {
 			builder.WriteString(" ")
 		}
 	}
-	value = builder.String()
+	value = strings.ToLower(builder.String())
 	return
 }
 `
