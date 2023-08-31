@@ -16,7 +16,7 @@ enum AnEnumType {
 }
 
 message Thing {
-  option (weaviate.weaviate_opts) = {generate: true, moduleConfig: '{"reranker-cohere": {}}', summaryEnabled: true};
+  option (weaviate.weaviate_opts) = {generate: true, moduleConfig: '{"reranker-cohere": {}}', summaryEnabled: true, summaryModuleConfig: '{"text2vec-contextionary": {"skip": true}}'};
   // @gotags: fake:"{uuid}"
   optional string id = 1;
   // @gotags: fake:"{price:0.00,1000.00}"
