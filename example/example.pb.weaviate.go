@@ -2,10 +2,8 @@ package example_example
 
 import (
 	json "encoding/json"
-	logging "github.com/catalystsquad/app-utils-go/logging"
-	logrus "github.com/sirupsen/logrus"
-	gjson "github.com/tidwall/gjson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"regexp"
 	strings "strings"
 	time "time"
 )
@@ -19,6 +17,8 @@ import (
 	"github.com/weaviate/weaviate/entities/models"
 	"strconv"
 )
+
+var summaryRegex = regexp.MustCompile(`[^a-zA-Z0-9 ]+`)
 
 type ThingWeaviateModel struct {
 
@@ -926,16 +926,7 @@ func getStringValue(x interface{}) (value string, err error) {
 	if jsonBytes, err = json.Marshal(x); err != nil {
 		return
 	}
-	values := gjson.GetBytes(jsonBytes, "@values")
-	logging.Log.WithFields(logrus.Fields{"json": string(jsonBytes), "values": values.String()}).Info("building summary string")
-	builder := new(strings.Builder)
-	for _, result := range values.Array() {
-		resultString := result.String()
-		if resultString != "" {
-			builder.WriteString(resultString)
-			builder.WriteString(" ")
-		}
-	}
-	value = strings.ToLower(builder.String())
+	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), "")
+	value = strings.ToLower(summaryString)
 	return
 }
