@@ -18,7 +18,7 @@ import (
 	"strconv"
 )
 
-var summaryRegex = regexp.MustCompile("[^a-zA-Z0-9 ]+")
+var summaryRegex = regexp.MustCompile("[^-'\\\\.a-zA-Z0-9 ]+")
 
 type ThingWeaviateModel struct {
 
@@ -926,7 +926,7 @@ func getStringValue(x interface{}) (value string, err error) {
 	if jsonBytes, err = json.Marshal(x); err != nil {
 		return
 	}
-	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), "")
+	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
 	value = strings.ToLower(summaryString)
 	return
 }
