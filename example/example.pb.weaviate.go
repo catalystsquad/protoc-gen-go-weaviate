@@ -3,7 +3,7 @@ package example_example
 import (
 	json "encoding/json"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	"regexp"
+	regexp "regexp"
 	strings "strings"
 	time "time"
 )
@@ -18,7 +18,7 @@ import (
 	"strconv"
 )
 
-var summaryRegex = regexp.MustCompile(`[^a-zA-Z0-9 ]+`)
+var summaryRegex = regexp.MustCompile("[^a-zA-Z0-9 ]+")
 
 type ThingWeaviateModel struct {
 
