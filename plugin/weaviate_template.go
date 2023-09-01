@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-var summaryRegex = regexp.MustCompile("[^a-zA-Z0-9 -_]+")
+var summaryRegex = regexp.MustCompile("[^-'\\\\.a-zA-Z0-9 ]+")
 
 {{ range .messages }}
 {{ if shouldGenerateMessage . }}
@@ -531,6 +531,7 @@ func getStringValue(x interface{}) (value string, err error) {
 	}
 	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
 	value = strings.ToLower(summaryString)
+	logging.Log.WithField("summary", value).Info("created summary")
 	return
 }
 `

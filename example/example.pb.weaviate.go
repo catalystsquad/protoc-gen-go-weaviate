@@ -2,6 +2,7 @@ package example_example
 
 import (
 	json "encoding/json"
+	logging "github.com/catalystsquad/app-utils-go/logging"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	regexp "regexp"
 	strings "strings"
@@ -928,5 +929,6 @@ func getStringValue(x interface{}) (value string, err error) {
 	}
 	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
 	value = strings.ToLower(summaryString)
+	logging.Log.WithField("summary", value).Info("created summary")
 	return
 }
