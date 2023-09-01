@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-var summaryRegex = regexp.MustCompile("[^a-zA-Z0-9 ]+")
+var summaryRegex = regexp.MustCompile("[^a-zA-Z0-9 -_]+")
 
 {{ range .messages }}
 {{ if shouldGenerateMessage . }}
