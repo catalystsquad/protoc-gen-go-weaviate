@@ -124,6 +124,8 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			}
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/tidwall/gjson"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/catalystsquad/app-utils-go/logging"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/sirupsen/logrus"})
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
