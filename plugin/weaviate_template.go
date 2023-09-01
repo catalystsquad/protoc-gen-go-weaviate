@@ -26,7 +26,7 @@ type {{ structName . }} struct {
 	{{ end }}
 }
 
-func (s {{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err error) {
+func (s *{{ structName . }}) ToProto() (theProto *{{ protoStructName . }}, err error) {
     theProto = &{{ protoStructName . }}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
@@ -126,11 +126,11 @@ func (s *{{ protoStructName . }}) ToWeaviateModel() (model *{{ structName . }}, 
     return
 }
 
-func (s {{ structName . }}) WeaviateClassName() string {
+func (s *{{ structName . }}) WeaviateClassName() string {
 	return "{{ className . }}"
 }
 
-func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
+func (s *{{ structName . }}) FullWeaviateClassSchema() models.Class {
     class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
@@ -147,14 +147,14 @@ func (s {{ structName . }}) FullWeaviateClassSchema() models.Class {
 	return class
 }
 
-func (s {{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
+func (s *{{ structName . }}) CrossReferenceWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.WeaviateClassSchemaCrossReferenceProperties(),
 	}
 }
 
-func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
+func (s *{{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
         {{- if vectorizer . }}
@@ -176,7 +176,7 @@ func (s {{ structName . }}) NonCrossReferenceWeaviateClassSchema() models.Class 
 	return class
 }
 
-func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
+func (s *{{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
   		{{ range .Fields -}}
 		    {{ if and (includeField . ) (ne (propertyName .) "id") (ne (fieldIsCrossReference .) true) }}
@@ -235,7 +235,7 @@ func (s {{ structName . }}) WeaviateClassSchemaNonCrossReferenceProperties() []*
 	return properties
 }
 
-func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
+func (s *{{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
   		{{- range .Fields }}
 		    {{ if and (includeField . ) (ne (propertyName .) "id") (fieldIsCrossReference .) -}}
@@ -248,11 +248,11 @@ func (s {{ structName . }}) WeaviateClassSchemaCrossReferenceProperties() []*mod
 	return properties
 }
 
-func (s {{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Property {
+func (s *{{ structName . }}) AllWeaviateClassSchemaProperties() []*models.Property {
 	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
-func (s {{ structName . }}) Data() (map[string]interface{}, error) {
+func (s *{{ structName . }}) Data() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	{{- range .Fields }}
 	{{ if includeField . }}
@@ -288,7 +288,7 @@ func (s {{ structName . }}) Data() (map[string]interface{}, error) {
 	return data, nil
 }
 
-func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
+func (s *{{ structName . }}) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
     {{- range .Fields }}
     {{- if and (includeField . ) (fieldIsCrossReference .) }}
     {{- if fieldIsRepeated . }}
@@ -325,11 +325,11 @@ func (s {{ structName . }}) addCrossReferenceData(data map[string]interface{}) m
 	return data
 }
 
-func (s {{ structName . }}) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+func (s *{{ structName . }}) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
 	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
 }
 
-func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *{{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	data, err = s.Create(ctx, client, consistencyLevel)
 	if err != nil && strings.Contains(err.Error(), "already exists") {
 		err = s.Update(ctx, client, consistencyLevel)
@@ -337,7 +337,7 @@ func (s {{ structName . }}) Upsert(ctx context.Context, client *weaviate.Client,
 	return
 }
 
-func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	{{- range .Fields }}
 	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
@@ -375,7 +375,7 @@ func (s {{ structName . }}) Create(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
+func (s *{{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	{{- range .Fields }}
 	  {{- if and (includeField . ) (fieldIsCrossReference .) }}
         {{- if fieldIsRepeated . }}
@@ -413,7 +413,7 @@ func (s {{ structName . }}) Update(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+func (s *{{ structName . }}) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
@@ -425,22 +425,22 @@ func (s {{ structName . }}) Delete(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s {{ structName . }}) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
+func (s *{{ structName . }}) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
 	if err = s.EnsureClassWithoutCrossReferences(client, continueOnError); err != nil {
 		return
 	}
 	return s.EnsureClassWithCrossReferences(client, continueOnError)
 }
 
-func (s {{ structName . }}) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *{{ structName . }}) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.NonCrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s {{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *{{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s {{ structName . }}) SummaryData() (string, error) {
+func (s *{{ structName . }}) SummaryData() (string, error) {
 	return getStringValue(s)
 }
 {{ end }}
@@ -450,7 +450,8 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	// create classes without cross references first so there are no errors about missing classes
 	{{- range .messages }}
 	{{- if shouldGenerateMessage . }}
-	err = {{ structName . }}{}.EnsureClassWithoutCrossReferences(client, continueOnError)
+    {{ structName . }}Pointer := &{{ structName . }}{}
+	err = {{ structName . }}Pointer.EnsureClassWithoutCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
@@ -459,7 +460,7 @@ func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	// update classes including cross references
 	{{- range .messages }}
 	{{- if shouldGenerateMessage . }}
-	err = {{ structName . }}{}.EnsureClassWithCrossReferences(client, continueOnError)
+	err = {{ structName . }}Pointer.EnsureClassWithCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}

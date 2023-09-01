@@ -30,8 +30,10 @@ import (
 const weaviateScheme = "http"
 const weaviateHost = "localhost:8080"
 
-var thingClass = ThingWeaviateModel{}.WeaviateClassName()
-var thing2Class = Thing2WeaviateModel{}.WeaviateClassName()
+var thingWeaviateModelPointer = &ThingWeaviateModel{}
+var thing2WeaviateModelPointer = &Thing2WeaviateModel{}
+var thingClass = thingWeaviateModelPointer.WeaviateClassName()
+var thing2Class = thing2WeaviateModelPointer.WeaviateClassName()
 var weaviateGraphqlUrl = fmt.Sprintf("%s://%s/v1/graphql", weaviateScheme, weaviateHost)
 var httpClient = &http.Client{}
 var weaviateClient = client.New(client.Config{
