@@ -343,7 +343,7 @@ func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client
         {{- if fieldIsRepeated . }}
           for _, crossReference := range s.{{ structFieldName . }} {
 			if crossReference != nil {
-			  _, err = crossReference.Upsert(ctx, client, consistencyLevel)
+			  _, err = crossReference.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
               if err != nil {
                 return
               }
@@ -351,7 +351,7 @@ func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client
 	      }
         {{- else }}
         if s.{{ structFieldName . }} != nil {
-		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  _, err = s.{{ structFieldName . }}.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return
 		  }
@@ -363,8 +363,6 @@ func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client
     if dataMap, err = s.Data(); err != nil {
       return
     }
-    dataBytes, _ := json.Marshal(dataMap)
-    logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -375,6 +373,27 @@ func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client
 		{{- end }}
 		WithConsistencyLevel(consistencyLevel).
 		Do(ctx)
+}
+
+func (s *{{ structName . }}) CreateEmptyReference(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	return client.Data().Creator().
+		WithClassName(s.WeaviateClassName()).
+		{{- if idFieldIsOptional . }}
+		WithID(lo.FromPtr(s.Id)).
+		{{- else }}
+		WithID(s.Id).
+		{{- end }}
+		WithConsistencyLevel(consistencyLevel).
+		Do(ctx)
+}
+
+func (s *{{ structName . }}) CreateEmptyReferenceIgnoreExistError(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.CreateEmptyReference(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "exists") {
+		// ignore exists error
+		err = nil
+	}
+	return
 }
 
 func (s *{{ structName . }}) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
@@ -391,7 +410,7 @@ func (s *{{ structName . }}) Update(ctx context.Context, client *weaviate.Client
 	      }
         {{- else }}
         if s.{{ structFieldName . }} != nil {
-		  _, err = s.{{ structFieldName . }}.Upsert(ctx, client, consistencyLevel)
+		  _, err = s.{{ structFieldName . }}.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		  if err != nil {
 		    return
 		  }
@@ -403,8 +422,6 @@ func (s *{{ structName . }}) Update(ctx context.Context, client *weaviate.Client
     if dataMap, err = s.Data(); err != nil {
       return
     }
-    dataBytes, _ := json.Marshal(dataMap)
-	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
@@ -536,7 +553,6 @@ func getStringValue(x interface{}) (value string, err error) {
 	}
 	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
 	value = strings.ToLower(summaryString)
-	logging.Log.WithField("summary", value).Info("created summary")
 	return
 }
 `

@@ -122,7 +122,6 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			templateMap := map[string]any{
 				"messages": protoFile.Messages,
 			}
-			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/catalystsquad/app-utils-go/logging"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "regexp"})
 			if err = tpl.Execute(&data, templateMap); err != nil {

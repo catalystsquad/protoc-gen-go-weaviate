@@ -2,7 +2,6 @@ package example_example
 
 import (
 	json "encoding/json"
-	logging "github.com/catalystsquad/app-utils-go/logging"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	regexp "regexp"
 	strings "strings"
@@ -590,20 +589,20 @@ func (s *ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client
 
 func (s *ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	if s.AssociatedThing != nil {
-		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.AssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	if s.OptionalAssociatedThing != nil {
-		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.OptionalAssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
 		if crossReference != nil {
-			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
+			_, err = crossReference.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 			if err != nil {
 				return
 			}
@@ -613,8 +612,6 @@ func (s *ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
-	dataBytes, _ := json.Marshal(dataMap)
-	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -623,15 +620,32 @@ func (s *ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client
 		Do(ctx)
 }
 
+func (s *ThingWeaviateModel) CreateEmptyReference(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	return client.Data().Creator().
+		WithClassName(s.WeaviateClassName()).
+		WithID(lo.FromPtr(s.Id)).
+		WithConsistencyLevel(consistencyLevel).
+		Do(ctx)
+}
+
+func (s *ThingWeaviateModel) CreateEmptyReferenceIgnoreExistError(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.CreateEmptyReference(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "exists") {
+		// ignore exists error
+		err = nil
+	}
+	return
+}
+
 func (s *ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	if s.AssociatedThing != nil {
-		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.AssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	if s.OptionalAssociatedThing != nil {
-		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.OptionalAssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
@@ -648,8 +662,6 @@ func (s *ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
-	dataBytes, _ := json.Marshal(dataMap)
-	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).
@@ -800,8 +812,6 @@ func (s *Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Clien
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
-	dataBytes, _ := json.Marshal(dataMap)
-	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -810,13 +820,28 @@ func (s *Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Clien
 		Do(ctx)
 }
 
+func (s *Thing2WeaviateModel) CreateEmptyReference(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	return client.Data().Creator().
+		WithClassName(s.WeaviateClassName()).
+		WithID(lo.FromPtr(s.Id)).
+		WithConsistencyLevel(consistencyLevel).
+		Do(ctx)
+}
+
+func (s *Thing2WeaviateModel) CreateEmptyReferenceIgnoreExistError(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.CreateEmptyReference(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "exists") {
+		// ignore exists error
+		err = nil
+	}
+	return
+}
+
 func (s *Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	var dataMap map[string]interface{}
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
-	dataBytes, _ := json.Marshal(dataMap)
-	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).
@@ -939,6 +964,5 @@ func getStringValue(x interface{}) (value string, err error) {
 	}
 	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
 	value = strings.ToLower(summaryString)
-	logging.Log.WithField("summary", value).Info("created summary")
 	return
 }
