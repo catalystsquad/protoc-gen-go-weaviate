@@ -613,6 +613,8 @@ func (s *ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
+	dataBytes, _ := json.Marshal(dataMap)
+	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -646,6 +648,8 @@ func (s *ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
+	dataBytes, _ := json.Marshal(dataMap)
+	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).
@@ -796,6 +800,8 @@ func (s *Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Clien
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
+	dataBytes, _ := json.Marshal(dataMap)
+	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -809,6 +815,8 @@ func (s *Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Clien
 	if dataMap, err = s.Data(); err != nil {
 		return
 	}
+	dataBytes, _ := json.Marshal(dataMap)
+	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).

@@ -363,6 +363,8 @@ func (s *{{ structName . }}) Create(ctx context.Context, client *weaviate.Client
     if dataMap, err = s.Data(); err != nil {
       return
     }
+    dataBytes, _ := json.Marshal(dataMap)
+    logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Creator().
 		WithClassName(s.WeaviateClassName()).
 		WithProperties(dataMap).
@@ -401,6 +403,8 @@ func (s *{{ structName . }}) Update(ctx context.Context, client *weaviate.Client
     if dataMap, err = s.Data(); err != nil {
       return
     }
+    dataBytes, _ := json.Marshal(dataMap)
+	logging.Log.WithField("data", string(dataBytes)).WithField("operation", "create").Info("sending data to weaviate")
 	return client.Data().Updater().
 		WithClassName(s.WeaviateClassName()).
 		{{- if idFieldIsOptional . }}
