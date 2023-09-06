@@ -30,8 +30,10 @@ import (
 const weaviateScheme = "http"
 const weaviateHost = "localhost:8080"
 
-var thingClass = ThingWeaviateModel{}.WeaviateClassName()
-var thing2Class = Thing2WeaviateModel{}.WeaviateClassName()
+var thingWeaviateModelPointer = &ThingWeaviateModel{}
+var thing2WeaviateModelPointer = &Thing2WeaviateModel{}
+var thingClass = thingWeaviateModelPointer.WeaviateClassName()
+var thing2Class = thing2WeaviateModelPointer.WeaviateClassName()
 var weaviateGraphqlUrl = fmt.Sprintf("%s://%s/v1/graphql", weaviateScheme, weaviateHost)
 var httpClient = &http.Client{}
 var weaviateClient = client.New(client.Config{
@@ -88,15 +90,20 @@ func (s *PluginSuite) TestPlugin() {
 	thing.OptionalAssociatedThing = &associatedThing2
 	thing.RepeatedMessages = []*Thing2{&associatedThing3, &associatedThing4}
 	require.NoError(s.T(), err)
-	optionalAssociatedThingModel, err := thing.OptionalAssociatedThing.ToWeaviateModel()
-	require.NoError(s.T(), err)
-	_, err = optionalAssociatedThingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
-	require.NoError(s.T(), err)
-	// create thing
+	// index thing
 	thingModel, err := thing.ToWeaviateModel()
 	require.NoError(s.T(), err)
 	_, err = thingModel.Create(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
+	// index thing references
+	_, err = thingModel.AssociatedThing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	_, err = thingModel.OptionalAssociatedThing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	for _, thing := range thingModel.RepeatedMessages {
+		_, err = thing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+		require.NoError(s.T(), err)
+	}
 	// query for thing
 	response := s.queryForThings(nil)
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
@@ -204,6 +211,68 @@ func (s *PluginSuite) TestUpsert() {
 	require.NoError(s.T(), err)
 	// ensure the update is correct
 	assertProtoEquality(s.T(), thing, postUpdateResultThing, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
+}
+
+func (s *PluginSuite) TestUpsertWithExistingCrossReferences() {
+	// create protos
+	thing := &Thing{}
+	associatedThing1 := Thing2{}
+	associatedThing2 := Thing2{}
+	associatedThing3 := Thing2{}
+	associatedThing4 := Thing2{}
+	// populate protos
+	err := gofakeit.Struct(&thing)
+	require.NoError(s.T(), err)
+	thing.ATimestamp = timestamppb.New(time.Now())
+	thing.OptionalTimestamp = timestamppb.New(time.Now())
+	thing.AStructField = &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: gofakeit.Name(),
+				},
+			},
+		},
+	}
+	thing.ABytes = []byte(gofakeit.HackerPhrase())
+	err = gofakeit.Struct(&associatedThing1)
+	require.NoError(s.T(), err)
+	err = gofakeit.Struct(&associatedThing2)
+	require.NoError(s.T(), err)
+	err = gofakeit.Struct(&associatedThing3)
+	require.NoError(s.T(), err)
+	err = gofakeit.Struct(&associatedThing4)
+	require.NoError(s.T(), err)
+	// set associated protos
+	thing.AssociatedThing = &associatedThing1
+	thing.OptionalAssociatedThing = &associatedThing2
+	thing.RepeatedMessages = []*Thing2{&associatedThing3, &associatedThing4}
+	require.NoError(s.T(), err)
+	// index thing references first
+	thingModel, err := thing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = thingModel.AssociatedThing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	_, err = thingModel.OptionalAssociatedThing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	for _, thing := range thingModel.RepeatedMessages {
+		_, err = thing.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+		require.NoError(s.T(), err)
+	}
+	// index thing
+	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	// query for thing
+	response := s.queryForThings(nil)
+	things, err := ThingWeaviateModelsFromGraphqlResult(response)
+	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	resultThing := thingsMap[*thing.Id]
+	require.NotNil(s.T(), resultThing)
+	resultThingProto, err := resultThing.ToProto()
+	require.NoError(s.T(), err)
+	assertProtoEquality(s.T(), thing, resultThingProto)
 }
 
 func (s *PluginSuite) deleteClass(class string) {

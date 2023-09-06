@@ -2,8 +2,8 @@ package example_example
 
 import (
 	json "encoding/json"
-	gjson "github.com/tidwall/gjson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	regexp "regexp"
 	strings "strings"
 	time "time"
 )
@@ -17,6 +17,8 @@ import (
 	"github.com/weaviate/weaviate/entities/models"
 	"strconv"
 )
+
+var summaryRegex = regexp.MustCompile("[^-'\\\\.a-zA-Z0-9 ]+")
 
 type ThingWeaviateModel struct {
 
@@ -75,7 +77,7 @@ type ThingWeaviateModel struct {
 	OptionalTimestamp *time.Time `json:"optionalTimestamp" fake:"skip"`
 }
 
-func (s ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
+func (s *ThingWeaviateModel) ToProto() (theProto *Thing, err error) {
 	theProto = &Thing{}
 
 	if s.Id != nil {
@@ -220,11 +222,11 @@ func (s *Thing) ToWeaviateModel() (model *ThingWeaviateModel, err error) {
 	return
 }
 
-func (s ThingWeaviateModel) WeaviateClassName() string {
+func (s *ThingWeaviateModel) WeaviateClassName() string {
 	return "Thing"
 }
 
-func (s ThingWeaviateModel) FullWeaviateClassSchema() models.Class {
+func (s *ThingWeaviateModel) FullWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
@@ -241,14 +243,14 @@ func (s ThingWeaviateModel) FullWeaviateClassSchema() models.Class {
 	return class
 }
 
-func (s ThingWeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
+func (s *ThingWeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.WeaviateClassSchemaCrossReferenceProperties(),
 	}
 }
 
-func (s ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
+func (s *ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
@@ -265,7 +267,7 @@ func (s ThingWeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class 
 	return class
 }
 
-func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
+func (s *ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
 
 	ADoubleProperty := &models.Property{
@@ -460,7 +462,7 @@ func (s ThingWeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*
 	return properties
 }
 
-func (s ThingWeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
+func (s *ThingWeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
 
 	properties = append(properties, &models.Property{
@@ -479,11 +481,11 @@ func (s ThingWeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*mod
 	return properties
 }
 
-func (s ThingWeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
+func (s *ThingWeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
 	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
-func (s ThingWeaviateModel) Data() (map[string]interface{}, error) {
+func (s *ThingWeaviateModel) Data() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 
 	data["aDoubleText"] = fmt.Sprintf("%v", s.ADouble)
@@ -548,7 +550,7 @@ func (s ThingWeaviateModel) Data() (map[string]interface{}, error) {
 	return data, nil
 }
 
-func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
+func (s *ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
 	if s.AssociatedThing != nil {
 		if lo.FromPtr(s.AssociatedThing.Id) != "" {
 			id := lo.FromPtr(s.AssociatedThing.Id)
@@ -573,11 +575,11 @@ func (s ThingWeaviateModel) addCrossReferenceData(data map[string]interface{}) m
 	return data
 }
 
-func (s ThingWeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+func (s *ThingWeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
 	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
 }
 
-func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	data, err = s.Create(ctx, client, consistencyLevel)
 	if err != nil && strings.Contains(err.Error(), "already exists") {
 		err = s.Update(ctx, client, consistencyLevel)
@@ -585,22 +587,22 @@ func (s ThingWeaviateModel) Upsert(ctx context.Context, client *weaviate.Client,
 	return
 }
 
-func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	if s.AssociatedThing != nil {
-		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.AssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	if s.OptionalAssociatedThing != nil {
-		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.OptionalAssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	for _, crossReference := range s.RepeatedMessages {
 		if crossReference != nil {
-			_, err = crossReference.Upsert(ctx, client, consistencyLevel)
+			_, err = crossReference.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 			if err != nil {
 				return
 			}
@@ -618,15 +620,32 @@ func (s ThingWeaviateModel) Create(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
+func (s *ThingWeaviateModel) CreateEmptyReference(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	return client.Data().Creator().
+		WithClassName(s.WeaviateClassName()).
+		WithID(lo.FromPtr(s.Id)).
+		WithConsistencyLevel(consistencyLevel).
+		Do(ctx)
+}
+
+func (s *ThingWeaviateModel) CreateEmptyReferenceIgnoreExistError(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.CreateEmptyReference(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "exists") {
+		// ignore exists error
+		err = nil
+	}
+	return
+}
+
+func (s *ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	if s.AssociatedThing != nil {
-		_, err = s.AssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.AssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
 	}
 	if s.OptionalAssociatedThing != nil {
-		_, err = s.OptionalAssociatedThing.Upsert(ctx, client, consistencyLevel)
+		_, err = s.OptionalAssociatedThing.CreateEmptyReferenceIgnoreExistError(ctx, client, consistencyLevel)
 		if err != nil {
 			return
 		}
@@ -651,7 +670,7 @@ func (s ThingWeaviateModel) Update(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s ThingWeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+func (s *ThingWeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).
@@ -659,22 +678,22 @@ func (s ThingWeaviateModel) Delete(ctx context.Context, client *weaviate.Client,
 		Do(ctx)
 }
 
-func (s ThingWeaviateModel) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
+func (s *ThingWeaviateModel) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
 	if err = s.EnsureClassWithoutCrossReferences(client, continueOnError); err != nil {
 		return
 	}
 	return s.EnsureClassWithCrossReferences(client, continueOnError)
 }
 
-func (s ThingWeaviateModel) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *ThingWeaviateModel) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.NonCrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s ThingWeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *ThingWeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s ThingWeaviateModel) SummaryData() (string, error) {
+func (s *ThingWeaviateModel) SummaryData() (string, error) {
 	return getStringValue(s)
 }
 
@@ -687,7 +706,7 @@ type Thing2WeaviateModel struct {
 	Name string `json:"name" fake:"{name}"`
 }
 
-func (s Thing2WeaviateModel) ToProto() (theProto *Thing2, err error) {
+func (s *Thing2WeaviateModel) ToProto() (theProto *Thing2, err error) {
 	theProto = &Thing2{}
 
 	if s.Id != nil {
@@ -710,11 +729,11 @@ func (s *Thing2) ToWeaviateModel() (model *Thing2WeaviateModel, err error) {
 	return
 }
 
-func (s Thing2WeaviateModel) WeaviateClassName() string {
+func (s *Thing2WeaviateModel) WeaviateClassName() string {
 	return "Thing2"
 }
 
-func (s Thing2WeaviateModel) FullWeaviateClassSchema() models.Class {
+func (s *Thing2WeaviateModel) FullWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.AllWeaviateClassSchemaProperties(),
@@ -723,14 +742,14 @@ func (s Thing2WeaviateModel) FullWeaviateClassSchema() models.Class {
 	return class
 }
 
-func (s Thing2WeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
+func (s *Thing2WeaviateModel) CrossReferenceWeaviateClassSchema() models.Class {
 	return models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.WeaviateClassSchemaCrossReferenceProperties(),
 	}
 }
 
-func (s Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
+func (s *Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class {
 	class := models.Class{
 		Class:      s.WeaviateClassName(),
 		Properties: s.WeaviateClassSchemaNonCrossReferenceProperties(),
@@ -739,7 +758,7 @@ func (s Thing2WeaviateModel) NonCrossReferenceWeaviateClassSchema() models.Class
 	return class
 }
 
-func (s Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
+func (s *Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
 
 	NameProperty := &models.Property{
@@ -752,17 +771,17 @@ func (s Thing2WeaviateModel) WeaviateClassSchemaNonCrossReferenceProperties() []
 	return properties
 }
 
-func (s Thing2WeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
+func (s *Thing2WeaviateModel) WeaviateClassSchemaCrossReferenceProperties() []*models.Property {
 	properties := []*models.Property{}
 
 	return properties
 }
 
-func (s Thing2WeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
+func (s *Thing2WeaviateModel) AllWeaviateClassSchemaProperties() []*models.Property {
 	return append(s.WeaviateClassSchemaNonCrossReferenceProperties(), s.WeaviateClassSchemaCrossReferenceProperties()...)
 }
 
-func (s Thing2WeaviateModel) Data() (map[string]interface{}, error) {
+func (s *Thing2WeaviateModel) Data() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 
 	data["name"] = s.Name
@@ -772,15 +791,15 @@ func (s Thing2WeaviateModel) Data() (map[string]interface{}, error) {
 	return data, nil
 }
 
-func (s Thing2WeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
+func (s *Thing2WeaviateModel) addCrossReferenceData(data map[string]interface{}) map[string]interface{} {
 	return data
 }
 
-func (s Thing2WeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
+func (s *Thing2WeaviateModel) exists(ctx context.Context, client *weaviate.Client) (bool, error) {
 	return client.Data().Checker().WithID(lo.FromPtr(s.Id)).WithClassName(s.WeaviateClassName()).Do(ctx)
 }
 
-func (s Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	data, err = s.Create(ctx, client, consistencyLevel)
 	if err != nil && strings.Contains(err.Error(), "already exists") {
 		err = s.Update(ctx, client, consistencyLevel)
@@ -788,7 +807,7 @@ func (s Thing2WeaviateModel) Upsert(ctx context.Context, client *weaviate.Client
 	return
 }
 
-func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+func (s *Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
 	var dataMap map[string]interface{}
 	if dataMap, err = s.Data(); err != nil {
 		return
@@ -801,7 +820,24 @@ func (s Thing2WeaviateModel) Create(ctx context.Context, client *weaviate.Client
 		Do(ctx)
 }
 
-func (s Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
+func (s *Thing2WeaviateModel) CreateEmptyReference(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	return client.Data().Creator().
+		WithClassName(s.WeaviateClassName()).
+		WithID(lo.FromPtr(s.Id)).
+		WithConsistencyLevel(consistencyLevel).
+		Do(ctx)
+}
+
+func (s *Thing2WeaviateModel) CreateEmptyReferenceIgnoreExistError(ctx context.Context, client *weaviate.Client, consistencyLevel string) (data *data.ObjectWrapper, err error) {
+	data, err = s.CreateEmptyReference(ctx, client, consistencyLevel)
+	if err != nil && strings.Contains(err.Error(), "exists") {
+		// ignore exists error
+		err = nil
+	}
+	return
+}
+
+func (s *Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client, consistencyLevel string) (err error) {
 	var dataMap map[string]interface{}
 	if dataMap, err = s.Data(); err != nil {
 		return
@@ -814,7 +850,7 @@ func (s Thing2WeaviateModel) Update(ctx context.Context, client *weaviate.Client
 		Do(ctx)
 }
 
-func (s Thing2WeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
+func (s *Thing2WeaviateModel) Delete(ctx context.Context, client *weaviate.Client, consistencyLevel string) error {
 	return client.Data().Deleter().
 		WithClassName(s.WeaviateClassName()).
 		WithID(lo.FromPtr(s.Id)).
@@ -822,41 +858,43 @@ func (s Thing2WeaviateModel) Delete(ctx context.Context, client *weaviate.Client
 		Do(ctx)
 }
 
-func (s Thing2WeaviateModel) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
+func (s *Thing2WeaviateModel) EnsureFullClass(client *weaviate.Client, continueOnError bool) (err error) {
 	if err = s.EnsureClassWithoutCrossReferences(client, continueOnError); err != nil {
 		return
 	}
 	return s.EnsureClassWithCrossReferences(client, continueOnError)
 }
 
-func (s Thing2WeaviateModel) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *Thing2WeaviateModel) EnsureClassWithoutCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.NonCrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s Thing2WeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
+func (s *Thing2WeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Client, continueOnError bool) error {
 	return ensureClass(client, s.CrossReferenceWeaviateClassSchema(), continueOnError)
 }
 
-func (s Thing2WeaviateModel) SummaryData() (string, error) {
+func (s *Thing2WeaviateModel) SummaryData() (string, error) {
 	return getStringValue(s)
 }
 
 func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
 	// create classes without cross references first so there are no errors about missing classes
-	err = ThingWeaviateModel{}.EnsureClassWithoutCrossReferences(client, continueOnError)
+	ThingWeaviateModelPointer := &ThingWeaviateModel{}
+	err = ThingWeaviateModelPointer.EnsureClassWithoutCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
-	err = Thing2WeaviateModel{}.EnsureClassWithoutCrossReferences(client, continueOnError)
+	Thing2WeaviateModelPointer := &Thing2WeaviateModel{}
+	err = Thing2WeaviateModelPointer.EnsureClassWithoutCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
 	// update classes including cross references
-	err = ThingWeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
+	err = ThingWeaviateModelPointer.EnsureClassWithCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
-	err = Thing2WeaviateModel{}.EnsureClassWithCrossReferences(client, continueOnError)
+	err = Thing2WeaviateModelPointer.EnsureClassWithCrossReferences(client, continueOnError)
 	if !continueOnError && err != nil {
 		return
 	}
@@ -924,14 +962,7 @@ func getStringValue(x interface{}) (value string, err error) {
 	if jsonBytes, err = json.Marshal(x); err != nil {
 		return
 	}
-	builder := new(strings.Builder)
-	for _, result := range gjson.GetBytes(jsonBytes, "@values").Array() {
-		resultString := result.String()
-		if resultString != "" {
-			builder.WriteString(resultString)
-			builder.WriteString(" ")
-		}
-	}
-	value = strings.ToLower(builder.String())
+	summaryString := summaryRegex.ReplaceAllString(string(jsonBytes), " ")
+	value = strings.ToLower(summaryString)
 	return
 }

@@ -123,7 +123,7 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 				"messages": protoFile.Messages,
 			}
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
-			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/tidwall/gjson"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "regexp"})
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
