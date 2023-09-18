@@ -464,6 +464,63 @@ func (s *{{ structName . }}) EnsureClassWithCrossReferences(client *weaviate.Cli
 func (s *{{ structName . }}) SummaryData() (string, error) {
 	return getStringValue(s)
 }
+
+func BatchDelete{{ className . }}(ctx context.Context, client *weaviate.Client, records []*{{ className . }}) (*models.BatchDeleteResponse, error) {
+	deleteWhereBuilder := &filters.WhereBuilder{}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperator(filters.Or)
+	operands := []*filters.WhereBuilder{}
+	// delete
+	for _, record := range records {
+		if record.Id != nil {
+			builder := &filters.WhereBuilder{}
+			builder = builder.WithPath([]string{"id"}).WithOperator(filters.Equal).WithValueText(*record.Id)
+			operands = append(operands, builder)
+		}
+	}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperands(operands)
+	deleter := client.Batch().ObjectsBatchDeleter().WithClassName("{{ className . }}").WithWhere(deleteWhereBuilder).WithOutput("minimal")
+	response, err := deleter.Do(ctx)
+	errorutils.LogOnErr(nil, "error deleting objects", err)
+	return response, err
+}
+
+func BatchCreate{{ className . }}(ctx context.Context, client *weaviate.Client, records []*{{ className . }}) ([]models.ObjectsGetResponse, error) {
+	objects := []*models.Object{}
+	for _, record := range records {
+		model, err := record.ToWeaviateModel()
+		if err != nil {
+			return nil, err
+		}
+		dataMap, err := model.Data()
+		if err != nil {
+			return nil, err
+		}
+		var id strfmt.UUID
+		err = id.UnmarshalText([]byte(*model.Id))
+		if err != nil {
+			return nil, err
+		}
+		obj := &models.Object{
+			Class:      model.WeaviateClassName(),
+			ID:         id,
+			Properties: dataMap,
+		}
+		objects = append(objects, obj)
+	}
+	creator := client.Batch().ObjectsBatcher().WithObjects(objects...)
+	response, err := creator.Do(ctx)
+	errorutils.LogOnErr(nil, "error batch creating objects", err)
+	return response, err
+}
+
+func BatchIndex{{ className . }}(ctx context.Context, client *weaviate.Client, records []*{{ className . }}) ([]models.ObjectsGetResponse, *models.BatchDeleteResponse, error) {
+	deleteResponse, err := BatchDelete{{ className . }}(ctx, client, records)
+	if err != nil {
+		return nil, nil, err
+	}
+	createResponse, err := BatchCreate{{ className . }}(ctx, client, records)
+	return createResponse, deleteResponse, err
+}
 {{ end }}
 {{ end }}
 

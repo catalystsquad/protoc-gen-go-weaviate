@@ -2,6 +2,9 @@ package example_example
 
 import (
 	json "encoding/json"
+	errorutils "github.com/catalystsquad/app-utils-go/errorutils"
+	strfmt "github.com/go-openapi/strfmt"
+	filters "github.com/weaviate/weaviate-go-client/v4/weaviate/filters"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	regexp "regexp"
 	strings "strings"
@@ -697,6 +700,63 @@ func (s *ThingWeaviateModel) SummaryData() (string, error) {
 	return getStringValue(s)
 }
 
+func BatchDeleteThing(ctx context.Context, client *weaviate.Client, records []*Thing) (*models.BatchDeleteResponse, error) {
+	deleteWhereBuilder := &filters.WhereBuilder{}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperator(filters.Or)
+	operands := []*filters.WhereBuilder{}
+	// delete
+	for _, record := range records {
+		if record.Id != nil {
+			builder := &filters.WhereBuilder{}
+			builder = builder.WithPath([]string{"id"}).WithOperator(filters.Equal).WithValueText(*record.Id)
+			operands = append(operands, builder)
+		}
+	}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperands(operands)
+	deleter := client.Batch().ObjectsBatchDeleter().WithClassName("Thing").WithWhere(deleteWhereBuilder).WithOutput("minimal")
+	response, err := deleter.Do(ctx)
+	errorutils.LogOnErr(nil, "error deleting objects", err)
+	return response, err
+}
+
+func BatchCreateThing(ctx context.Context, client *weaviate.Client, records []*Thing) ([]models.ObjectsGetResponse, error) {
+	objects := []*models.Object{}
+	for _, record := range records {
+		model, err := record.ToWeaviateModel()
+		if err != nil {
+			return nil, err
+		}
+		dataMap, err := model.Data()
+		if err != nil {
+			return nil, err
+		}
+		var id strfmt.UUID
+		err = id.UnmarshalText([]byte(*model.Id))
+		if err != nil {
+			return nil, err
+		}
+		obj := &models.Object{
+			Class:      model.WeaviateClassName(),
+			ID:         id,
+			Properties: dataMap,
+		}
+		objects = append(objects, obj)
+	}
+	creator := client.Batch().ObjectsBatcher().WithObjects(objects...)
+	response, err := creator.Do(ctx)
+	errorutils.LogOnErr(nil, "error batch creating objects", err)
+	return response, err
+}
+
+func BatchIndexThing(ctx context.Context, client *weaviate.Client, records []*Thing) ([]models.ObjectsGetResponse, *models.BatchDeleteResponse, error) {
+	deleteResponse, err := BatchDeleteThing(ctx, client, records)
+	if err != nil {
+		return nil, nil, err
+	}
+	createResponse, err := BatchCreateThing(ctx, client, records)
+	return createResponse, deleteResponse, err
+}
+
 type Thing2WeaviateModel struct {
 
 	// @gotags: fake:"{uuid}"
@@ -875,6 +935,63 @@ func (s *Thing2WeaviateModel) EnsureClassWithCrossReferences(client *weaviate.Cl
 
 func (s *Thing2WeaviateModel) SummaryData() (string, error) {
 	return getStringValue(s)
+}
+
+func BatchDeleteThing2(ctx context.Context, client *weaviate.Client, records []*Thing2) (*models.BatchDeleteResponse, error) {
+	deleteWhereBuilder := &filters.WhereBuilder{}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperator(filters.Or)
+	operands := []*filters.WhereBuilder{}
+	// delete
+	for _, record := range records {
+		if record.Id != nil {
+			builder := &filters.WhereBuilder{}
+			builder = builder.WithPath([]string{"id"}).WithOperator(filters.Equal).WithValueText(*record.Id)
+			operands = append(operands, builder)
+		}
+	}
+	deleteWhereBuilder = deleteWhereBuilder.WithOperands(operands)
+	deleter := client.Batch().ObjectsBatchDeleter().WithClassName("Thing2").WithWhere(deleteWhereBuilder).WithOutput("minimal")
+	response, err := deleter.Do(ctx)
+	errorutils.LogOnErr(nil, "error deleting objects", err)
+	return response, err
+}
+
+func BatchCreateThing2(ctx context.Context, client *weaviate.Client, records []*Thing2) ([]models.ObjectsGetResponse, error) {
+	objects := []*models.Object{}
+	for _, record := range records {
+		model, err := record.ToWeaviateModel()
+		if err != nil {
+			return nil, err
+		}
+		dataMap, err := model.Data()
+		if err != nil {
+			return nil, err
+		}
+		var id strfmt.UUID
+		err = id.UnmarshalText([]byte(*model.Id))
+		if err != nil {
+			return nil, err
+		}
+		obj := &models.Object{
+			Class:      model.WeaviateClassName(),
+			ID:         id,
+			Properties: dataMap,
+		}
+		objects = append(objects, obj)
+	}
+	creator := client.Batch().ObjectsBatcher().WithObjects(objects...)
+	response, err := creator.Do(ctx)
+	errorutils.LogOnErr(nil, "error batch creating objects", err)
+	return response, err
+}
+
+func BatchIndexThing2(ctx context.Context, client *weaviate.Client, records []*Thing2) ([]models.ObjectsGetResponse, *models.BatchDeleteResponse, error) {
+	deleteResponse, err := BatchDeleteThing2(ctx, client, records)
+	if err != nil {
+		return nil, nil, err
+	}
+	createResponse, err := BatchCreateThing2(ctx, client, records)
+	return createResponse, deleteResponse, err
 }
 
 func EnsureClasses(client *weaviate.Client, continueOnError bool) (err error) {
