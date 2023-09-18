@@ -179,6 +179,11 @@ func (s *PluginSuite) TestUpsert() {
 	require.NoError(s.T(), err)
 	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
 	require.NoError(s.T(), err)
+	// upsert associated thing
+	associatedThingModel, err := thing.AssociatedThing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = associatedThingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
 	// query for thing
 	response := s.queryForThings(nil)
 	things, err := ThingWeaviateModelsFromGraphqlResult(response)
@@ -188,7 +193,7 @@ func (s *PluginSuite) TestUpsert() {
 	resultThing := thingsMap[*thing.Id]
 	resultThingProto, err := resultThing.ToProto()
 	require.NoError(s.T(), err)
-	assertProtoEquality(s.T(), thing, resultThingProto, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
+	assertProtoEquality(s.T(), thing, resultThingProto)
 	// update
 	thing.AString = gofakeit.HackerPhrase()
 	updatedModel, err := thing.ToWeaviateModel()
@@ -210,7 +215,7 @@ func (s *PluginSuite) TestUpsert() {
 	require.NotNil(s.T(), postUpdateResultThing)
 	require.NoError(s.T(), err)
 	// ensure the update is correct
-	assertProtoEquality(s.T(), thing, postUpdateResultThing, protocmp.IgnoreFields(&Thing{}, "associated_thing"))
+	assertProtoEquality(s.T(), thing, postUpdateResultThing)
 }
 
 func (s *PluginSuite) TestUpsertWithExistingCrossReferences() {
@@ -273,6 +278,63 @@ func (s *PluginSuite) TestUpsertWithExistingCrossReferences() {
 	resultThingProto, err := resultThing.ToProto()
 	require.NoError(s.T(), err)
 	assertProtoEquality(s.T(), thing, resultThingProto)
+}
+
+func (s *PluginSuite) TestBatchReindex() {
+	// create protos
+	thing := &Thing{Id: lo.ToPtr(uuid.New().String())}
+	associatedThing := &Thing2{Id: lo.ToPtr(uuid.New().String())}
+	// populate protos
+	err := gofakeit.Struct(&thing)
+	require.NoError(s.T(), err)
+	err = gofakeit.Struct(&associatedThing)
+	require.NoError(s.T(), err)
+	thing.AssociatedThing = associatedThing
+	thing.ATimestamp = timestamppb.New(time.Now())
+	thing.OptionalTimestamp = timestamppb.New(time.Now())
+	thing.AStructField = &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: gofakeit.Name(),
+				},
+			},
+		},
+	}
+	thing.ABytes = []byte(gofakeit.HackerPhrase())
+	// upsert thing
+	thingModel, err := thing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = thingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	// upsert associated thing
+	associatedThingModel, err := thing.AssociatedThing.ToWeaviateModel()
+	require.NoError(s.T(), err)
+	_, err = associatedThingModel.Upsert(context.Background(), weaviateClient, replication.ConsistencyLevel.ALL)
+	require.NoError(s.T(), err)
+	// query for thing
+	response := s.queryForThings(nil)
+	things, err := ThingWeaviateModelsFromGraphqlResult(response)
+	thingsMap := lo.KeyBy(things, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	resultThing := thingsMap[*thing.Id]
+	resultThingProto, err := resultThing.ToProto()
+	require.NoError(s.T(), err)
+	assertProtoEquality(s.T(), thing, resultThingProto)
+	// batch index thing
+	_, _, err = BatchIndexThing(context.Background(), weaviateClient, []*Thing{thing})
+	require.NoError(s.T(), err)
+	// query for thing
+	response2 := s.queryForThings(nil)
+	things2, err := ThingWeaviateModelsFromGraphqlResult(response2)
+	things2Map := lo.KeyBy(things2, func(item ThingWeaviateModel) string {
+		return *item.Id
+	})
+	resultThing2 := things2Map[*thing.Id]
+	resultThing2Proto, err := resultThing2.ToProto()
+	require.NoError(s.T(), err)
+	assertProtoEquality(s.T(), thing, resultThing2Proto)
 }
 
 func (s *PluginSuite) deleteClass(class string) {

@@ -124,6 +124,9 @@ func (b *Builder) Generate() (response *pluginpb.CodeGeneratorResponse, err erro
 			}
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "strings"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "regexp"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/catalystsquad/app-utils-go/errorutils"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/go-openapi/strfmt"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/weaviate/weaviate-go-client/v4/weaviate/filters"})
 			if err = tpl.Execute(&data, templateMap); err != nil {
 				return
 			}
